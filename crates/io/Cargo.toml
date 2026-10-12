@@ -1,0 +1,56 @@
+[package]
+name = "photoka-io"
+description = "Import/export between photoka documents and PSD/PSB and flat raster formats"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+rust-version.workspace = true
+
+[lints]
+workspace = true
+
+[features]
+# Real-file corpus tests (opt-in; `cargo xtask test-corpus`). Fail when the corpus is missing.
+corpus = []
+# HEIC/HEIF decode (forwarded to photoka-codecs; see its `heif` feature).
+heif = ["photoka-codecs/heif"]
+
+[dependencies]
+photoka-geom = { workspace = true }
+photoka-color = { workspace = true }
+photoka-cms = { workspace = true }
+photoka-raster = { workspace = true }
+photoka-doc = { workspace = true }
+photoka-compose = { workspace = true }
+photoka-algo = { workspace = true }
+photoka-psd = { workspace = true }
+photoka-codecs = { workspace = true }
+photoka-raw = { workspace = true }
+photoka-affinity = { workspace = true }
+photoka-text = { workspace = true }
+photoka-paint = { workspace = true }
+photoka-vector = { workspace = true }
+photoka-format = { path = "../format" }
+thiserror = { workspace = true }
+serde_json = { workspace = true }
+blake3 = { version = "1.8", default-features = false, features = ["pure"] }
+# svg.rs inflates `.svgz` itself (with a size cap) so the XML can be checked before it is parsed;
+# pdn.rs inflates Paint.NET's gzip pixel chunks.
+flate2 = { workspace = true }
+# ora.rs reads OpenRaster's stack.xml (already in the tree through usvg).
+roxmltree = "0.20"
+# SVG import (svg.rs): usvg parses, resvg rasterises what the shape model can't hold. Both are
+# already in the tree through the UI's icon loader; text shaping needs the fonts feature set.
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+resvg = { version = "0.45", default-features = false, features = ["text", "system-fonts", "raster-images"] }
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+resvg = { version = "0.45", default-features = false, features = ["text", "raster-images"] }
+
+[dev-dependencies]
+crc32fast = "1.5"
+photoka-affinity = { workspace = true, features = ["synth"] }
+flate2 = { workspace = true }
+photoka-psd = { workspace = true, features = ["testgen"] }
+photoka-raw = { workspace = true, features = ["testgen"] }
+proptest = { workspace = true }

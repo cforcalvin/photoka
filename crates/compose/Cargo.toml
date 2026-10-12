@@ -1,0 +1,27 @@
+[package]
+name = "photoka-compose"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+photoka-geom = { workspace = true }
+photoka-color = { workspace = true }
+photoka-raster = { workspace = true }
+photoka-doc = { workspace = true }
+photoka-vector = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rayon = { workspace = true }
+
+[dev-dependencies]
+proptest = { workspace = true }
+criterion = { workspace = true }
+photoka-paint = { workspace = true }
+
+[[bench]]
+name = "compose"
+harness = false

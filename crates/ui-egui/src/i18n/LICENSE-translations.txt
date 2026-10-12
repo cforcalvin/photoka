@@ -1,0 +1,30 @@
+Photoka's Korean, German, Brazilian Portuguese, Italian, Ukrainian, Dutch, Czech, Turkish and
+Hungarian UI translation catalogs are licensed under MIT OR Apache-2.0, at your option. The full
+license texts are in ../../../../LICENSE-MIT and ../../../../LICENSE-APACHE.
+
+Korean translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+German translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Brazilian Portuguese translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Italian translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Ukrainian translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Dutch translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Czech translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Turkish translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.
+
+Hungarian translations: Photoka contributors, original translations of
+Photoka's English labels; no proprietary translation resources were used.

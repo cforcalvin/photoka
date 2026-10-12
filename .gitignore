@@ -1,0 +1,17 @@
+*~
+plan/
+/target
+target/
+/dist
+/corpus
+/log
+/secrets
+/temp
+/book/output
+/craft-fonts
+*.log
+__pycache__/
+
+# macOS metadata (exFAT/network volumes)
+._*
+.DS_Store

@@ -1,0 +1,141 @@
+[workspace]
+resolver = "3"
+members = ["crates/*", "apps/*", "xtask"]
+default-members = ["crates/*", "apps/photoka", "apps/photoka-cli", "xtask"]
+
+[workspace.package]
+version = "0.8.2"
+edition = "2024"
+license = "MIT OR Apache-2.0"
+rust-version = "1.95"
+
+[workspace.dependencies]
+craft-ui = { git = "https://github.com/storytold/craft-libs", rev = "5c874d51eeb3de70e735c8ce87a59a7dedd47675", features = ["serde"] }
+# internal
+photoka-geom = { path = "crates/geom" }
+photoka-color = { path = "crates/color" }
+photoka-cms = { path = "crates/cms" }
+photoka-raster = { path = "crates/raster" }
+photoka-doc = { path = "crates/doc" }
+photoka-ops = { path = "crates/ops" }
+photoka-psd = { path = "crates/psd" }
+photoka-codecs = { path = "crates/codecs" }
+photoka-raw = { path = "crates/raw" }
+photoka-affinity = { path = "crates/affinity" }
+photoka-compose = { path = "crates/compose" }
+photoka-gpu = { path = "crates/gpu" }
+photoka-paint = { path = "crates/paint" }
+photoka-algo = { path = "crates/algo" }
+photoka-io = { path = "crates/io" }
+photoka-text = { path = "crates/text" }
+photoka-vector = { path = "crates/vector" }
+photoka-format = { path = "crates/format" }
+photoka-automation = { path = "crates/automation" }
+photoka-plugins = { path = "crates/plugins" }
+photoka-engine = { path = "crates/engine" }
+photoka-ui-egui = { path = "crates/ui-egui" }
+photoka-testkit = { path = "crates/testkit" }
+photoka-tablet = { path = "crates/tablet" }
+
+# external
+thiserror = "2"
+serde = { version = "1", features = ["derive", "rc"] }
+serde_json = "1"
+arc-swap = "1"
+bytemuck = { version = "1", features = ["derive"] }
+flate2 = { version = "1", default-features = false, features = ["rust_backend"] }
+image = { version = "0.25", default-features = false }
+# Baseline-JPEG decode of lossy DNG tiles (compression 34892), shared with zune-jpeg.
+zune-core = "0.5"
+zune-jpeg = "0.5"
+proptest = "1"
+eframe = { version = "0.36", default-features = false }
+# Without `default_fonts`, which embeds egui's fonts uncompressed: ui-egui ships them deflated
+# (egui_fonts.rs; the web build's size gate).
+egui = { version = "0.36", default-features = false }
+egui_kittest = "0.36"
+rfd = "0.17"
+log = "0.4"
+rayon = "1"
+criterion = { version = "0.5", default-features = false }
+getrandom = "0.3"
+
+[workspace.lints.rust]
+unsafe_code = "forbid"
+
+[workspace.lints.clippy]
+dbg_macro = "warn"
+todo = "warn"
+
+[profile.dev.package."*"]
+opt-level = 2
+
+[profile.dev]
+opt-level = 1
+# Line tables keep file:line in panic backtraces but drop variable info, which roughly halves link
+# time and PDB size for the ~260 test binaries (#2204). CI sets the same through
+# CARGO_PROFILE_DEV_DEBUG. To inspect locals in a debugger, build with CARGO_PROFILE_DEV_DEBUG=true.
+debug = "line-tables-only"
+
+[profile.release]
+lto = "thin"
+codegen-units = 1
+
+# The browser build (apps/photoka-web, `data-cargo-profile` in its index.html). Hosts cap the
+# size of a single file (Cloudflare Pages/Workers: 25 MiB), and the wasm is downloaded on every
+# visit, so this profile optimizes for size: fat LTO, opt-level "z" for Photoka's own crates,
+# "s" for dependencies and for the crates that decode files, and 3 for pixel processing (filters
+# and compositing). Dependencies stay at "s": at "z" the whole wasm grows (by 0.4 MB, measured).
+# panic stays the target default (wasm32-unknown-unknown aborts; AGENTS.md's `panic = "unwind"`
+# is for the native app shell). packaging/web/package.sh fails the build above 24 MiB.
+[profile.wasm-release]
+inherits = "release"
+opt-level = "z"
+lto = "fat"
+codegen-units = 1
+strip = "debuginfo"
+
+[profile.wasm-release.package."*"]
+opt-level = "s"
+
+# Decoding and rasterizing keep their speed.
+[profile.wasm-release.package.photoka-codecs]
+opt-level = "s"
+[profile.wasm-release.package.photoka-raw]
+opt-level = "s"
+[profile.wasm-release.package.photoka-heif]
+opt-level = "s"
+[profile.wasm-release.package.photoka-vector]
+opt-level = "s"
+
+# Large crates off the per-frame and per-pixel paths: the document model, file parsers run once
+# per open/save, JSON (settings, presets, control channel), SVG parsing, and shader translation
+# (runs when a pipeline is created). "z" keeps the wasm well under the size gate.
+[profile.wasm-release.package.photoka-doc]
+opt-level = "z"
+[profile.wasm-release.package.photoka-psd]
+opt-level = "z"
+[profile.wasm-release.package.photoka-format]
+opt-level = "z"
+[profile.wasm-release.package.photoka-affinity]
+opt-level = "z"
+[profile.wasm-release.package.serde_json]
+opt-level = "z"
+[profile.wasm-release.package.usvg]
+opt-level = "z"
+[profile.wasm-release.package.naga]
+opt-level = "z"
+
+# Pixel processing keeps its speed-oriented optimization level.
+[profile.wasm-release.package.photoka-raster]
+opt-level = 3
+[profile.wasm-release.package.photoka-color]
+opt-level = 3
+[profile.wasm-release.package.photoka-cms]
+opt-level = 3
+[profile.wasm-release.package.photoka-compose]
+opt-level = 3
+[profile.wasm-release.package.photoka-algo]
+opt-level = 3
+[profile.wasm-release.package.photoka-paint]
+opt-level = 3

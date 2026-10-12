@@ -1,0 +1,29 @@
+name: Release
+
+on:
+  push:
+    branches: [release]
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Version override for a test run, e.g. 0.2.0-rc.1 (empty: Cargo.toml)"
+        type: string
+        default: ""
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  release:
+    # Pinned to a commit of the upstream shared workflows; bump deliberately after reviewing changes.
+    # No signing secrets are passed, so the packages are unsigned until Photoka has its own certificates.
+    uses: storytold/craft-common-actions/.github/workflows/release.yml@f0808a5ccbc32869248193ffab0de98d733de451
+    with:
+      app-name: photoka
+      app-title: Photoka
+      craft-fonts-ref: abb83316d96aa59c1cf64784289e378fe9fa5695
+      version: ${{ inputs.version }}

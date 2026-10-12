@@ -1,0 +1,12 @@
+[package]
+name = "photoka-color"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+photoka-cms = { workspace = true }
+serde = { workspace = true }

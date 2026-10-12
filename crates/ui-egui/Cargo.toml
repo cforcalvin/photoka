@@ -1,0 +1,69 @@
+[package]
+name = "photoka-ui-egui"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+
+[lints]
+workspace = true
+
+[dependencies]
+craft-ui = { workspace = true }
+photoka-geom = { workspace = true }
+photoka-color = { workspace = true }
+photoka-cms = { workspace = true }
+photoka-raster = { workspace = true }
+photoka-doc = { workspace = true }
+photoka-compose = { workspace = true }
+photoka-gpu = { workspace = true }
+photoka-engine = { workspace = true }
+photoka-io = { workspace = true }
+photoka-plugins = { workspace = true }
+photoka-algo = { workspace = true }
+photoka-text = { workspace = true }
+photoka-vector = { workspace = true }
+# Only MAX_BRUSH_SIZE: `ui.set brushSize` validates against the Brush Settings range up front.
+photoka-paint = { workspace = true }
+# Reading files to open them (bounded reads, a clear error for files larger than memory).
+photoka-format = { workspace = true }
+# Decoding the brand mark's PNG (`brand.rs`); already linked through photoka-io.
+photoka-codecs = { workspace = true }
+egui = { workspace = true }
+egui_extras = { version = "0.36", default-features = false, features = ["svg"] }
+eframe = { workspace = true, features = ["wgpu", "accesskit"] }
+serde = { workspace = true }
+serde_json = { workspace = true }
+log = { workspace = true }
+base64 = "0.22"
+# Inflating the translation catalogs, stored deflated (build.rs); already linked through photoka-io.
+flate2 = { workspace = true }
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+rayon = { workspace = true }
+# Safe native UI-language APIs (Windows/macOS); no subprocess or web dependency.
+sys-locale = "=0.3.2"
+
+# Installed RAM for the GPU memory budget (`gpu_canvas::physical_memory`): the safe binding the
+# desktop app already uses, pinned to the same version.
+[target.'cfg(target_os = "windows")'.dependencies]
+winsafe = { version = "=0.0.29", default-features = false, features = ["kernel"] }
+
+[dev-dependencies]
+# egui's own default fonts in tests: the oracle for egui_fonts.rs, and contexts made with
+# `Context::default()` (no install_fonts) can lay out text.
+egui = { workspace = true, features = ["default_fonts"] }
+# Synthetic raw files for the open-time Camera Raw dialog tests.
+photoka-raw = { workspace = true, features = ["testgen"] }
+egui_kittest = { workspace = true, features = ["wgpu", "snapshot", "eframe"] }
+# Benchmark helpers for the `--json` benches `cargo xtask perf` runs (in-process RSS, percentiles).
+photoka-testkit = { workspace = true }
+# Only for examples/perf_scenarios.rs (a 500-brush .abr for the #210 import row).
+photoka-psd = { workspace = true }
+
+[build-dependencies]
+# Deflates the translation catalogs and egui's default fonts (build.rs); already linked at run time to inflate them.
+flate2 = { workspace = true }
+# egui's default fonts, deflated by build.rs for egui_fonts.rs (the same version egui uses).
+epaint_default_fonts = "0.36"
+serde_json = { workspace = true }
+toml = "1"
