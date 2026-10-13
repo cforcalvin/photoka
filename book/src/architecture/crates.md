@@ -20,6 +20,5 @@ Workspace applications are:
 |---|---|---|
 | Photoka desktop | `apps/photoka` | eframe/wgpu application and loopback control server |
 | Photoka CLI | `apps/photoka-cli` | Convert, inspect, run, batch, JSON-lines serve, and MCP |
-| Photoka web | `apps/photoka-web` | The UI and engine compiled for WebAssembly |
 
 New crates must be registered in `xtask/src/layers.rs`. Nothing below `ui-egui` may depend on egui, eframe, winit, or rfd. The `psd`, `codecs`, and `cms` crates have additional independence requirements documented in [`AGENTS.md`](https://github.com/cforcalvin/photoka/blob/main/AGENTS.md).

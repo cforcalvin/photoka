@@ -1,7 +1,6 @@
 [workspace]
 resolver = "3"
 members = ["crates/*", "apps/*", "xtask"]
-default-members = ["crates/*", "apps/photoka", "apps/photoka-cli", "xtask"]
 
 [workspace.package]
 version = "0.8.2"
@@ -80,62 +79,3 @@ debug = "line-tables-only"
 [profile.release]
 lto = "thin"
 codegen-units = 1
-
-# The browser build (apps/photoka-web, `data-cargo-profile` in its index.html). Hosts cap the
-# size of a single file (Cloudflare Pages/Workers: 25 MiB), and the wasm is downloaded on every
-# visit, so this profile optimizes for size: fat LTO, opt-level "z" for Photoka's own crates,
-# "s" for dependencies and for the crates that decode files, and 3 for pixel processing (filters
-# and compositing). Dependencies stay at "s": at "z" the whole wasm grows (by 0.4 MB, measured).
-# panic stays the target default (wasm32-unknown-unknown aborts; AGENTS.md's `panic = "unwind"`
-# is for the native app shell). packaging/web/package.sh fails the build above 24 MiB.
-[profile.wasm-release]
-inherits = "release"
-opt-level = "z"
-lto = "fat"
-codegen-units = 1
-strip = "debuginfo"
-
-[profile.wasm-release.package."*"]
-opt-level = "s"
-
-# Decoding and rasterizing keep their speed.
-[profile.wasm-release.package.photoka-codecs]
-opt-level = "s"
-[profile.wasm-release.package.photoka-raw]
-opt-level = "s"
-[profile.wasm-release.package.photoka-heif]
-opt-level = "s"
-[profile.wasm-release.package.photoka-vector]
-opt-level = "s"
-
-# Large crates off the per-frame and per-pixel paths: the document model, file parsers run once
-# per open/save, JSON (settings, presets, control channel), SVG parsing, and shader translation
-# (runs when a pipeline is created). "z" keeps the wasm well under the size gate.
-[profile.wasm-release.package.photoka-doc]
-opt-level = "z"
-[profile.wasm-release.package.photoka-psd]
-opt-level = "z"
-[profile.wasm-release.package.photoka-format]
-opt-level = "z"
-[profile.wasm-release.package.photoka-affinity]
-opt-level = "z"
-[profile.wasm-release.package.serde_json]
-opt-level = "z"
-[profile.wasm-release.package.usvg]
-opt-level = "z"
-[profile.wasm-release.package.naga]
-opt-level = "z"
-
-# Pixel processing keeps its speed-oriented optimization level.
-[profile.wasm-release.package.photoka-raster]
-opt-level = 3
-[profile.wasm-release.package.photoka-color]
-opt-level = 3
-[profile.wasm-release.package.photoka-cms]
-opt-level = 3
-[profile.wasm-release.package.photoka-compose]
-opt-level = 3
-[profile.wasm-release.package.photoka-algo]
-opt-level = 3
-[profile.wasm-release.package.photoka-paint]
-opt-level = 3

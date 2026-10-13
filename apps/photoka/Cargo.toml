@@ -5,7 +5,6 @@ edition.workspace = true
 license.workspace = true
 default-run = "photoka"
 description = "Photoka: an open-source, native image editor"
-build = "build.rs"
 
 [features]
 # Open HEIC/HEIF photos (the optional photoka-heif crate). Not default so distributors choose
@@ -91,7 +90,3 @@ objc2-app-kit = { version = "=0.3.2", default-features = false, features = ["std
 [[test]]
 name = "mac_menu_appkit"
 harness = false
-
-[build-dependencies]
-# Icon + VERSIONINFO for photoka.exe; build.rs only uses it when targeting Windows.
-winresource = "0.1"

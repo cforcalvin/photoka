@@ -7,13 +7,13 @@
 What exists on `main` today. The numbered sections below are the original design plan of
 2026-09-30; where the code differs, this summary wins.
 
-- **Workspace:** 25 library crates under `crates/`, 3 apps (`photoka` desktop, `photoka-cli`,
-  `photoka-web`), `xtask`, an example plug-in and 5 fuzz crates; ~393,000 lines of Rust in
+- **Workspace:** 25 library crates under `crates/`, 2 apps (`photoka` desktop, `photoka-cli`),
+  `xtask`, an example plug-in and 5 fuzz crates; ~393,000 lines of Rust in
   ~1,020 files; ~5,460 `#[test]` functions (ui-egui 1,677, engine 1,237, algo 408, io 377,
   codecs 325, psd 263). Crate map and layers: [`AGENTS.md`](../AGENTS.md) §2 and
   `xtask/src/layers.rs` (enforced by `cargo xtask layers`).
-- **UI toolkit:** decided: egui/eframe on wgpu (no webview, no JavaScript). The same Rust builds
-  to WebAssembly for the browser (trunk + wasm-bindgen).
+- **UI toolkit:** decided: egui/eframe on wgpu (no webview, no JavaScript). Photoka ships for
+  macOS only.
 - **Engine:** ~700 commands registered in `crates/engine` (`CommandSpec` in `commands.rs`); the
   UI, CLI, JSON control channel and MCP server all dispatch by command id. 628 Photoshop menu items
   map to them (`crates/ui-egui/src/menu_catalog.rs`).
@@ -42,9 +42,8 @@ This plan sets out:
 ## 1. Goals and principles
 
 **Goals**
-- A native, portable (macOS / Windows / Linux), fully open-source layered image editor, roughly matching Photoshop's feature surface over time.
+- A native macOS, fully open-source layered image editor, roughly matching Photoshop's feature surface over time.
 - **The UI can be swapped** without touching the core: egui today, maybe Slint, Qt or something else later.
-- **The core compiles to `wasm32`,** which keeps a browser demo possible.
 - PSD read and write lives in its **own crate that can be published separately.**
 
 **Principles**
@@ -145,8 +144,7 @@ photoka/
 │  └─ testkit/                 photoka-testkit   golden images, perceptual diff, fixtures, PSD corpus helpers
 ├─ apps/
 │  ├─ photoka/              desktop binary (winit + wgpu + ui-egui + platform-native)
-│  ├─ photoka-cli/          headless batch CLI (open → commands → export), also hosts `mcp` subcommand
-│  └─ photoka-web/          wasm32 binary (ui-egui + platform-web), demo
+│  └─ photoka-cli/          headless batch CLI (open → commands → export), also hosts `mcp` subcommand
 ├─ shaders/                    (or inside gpu/) WGSL, with generated struct headers
 ├─ assets/                     icons, bundled fonts, default brushes/swatches/presets
 ├─ fuzz/                       cargo-fuzz targets (psd, codecs, format)
@@ -180,7 +178,7 @@ photoka/
 1. A crate may depend only on crates in **lower** layers. No cycles and no sideways dependencies, except where listed.
 2. **Nothing below L6 may depend on any UI toolkit, winit, or a `platform` implementation.** Platform services reach the engine through traits defined in `engine` (or in `platform`'s trait-only core), and are injected at startup.
 3. **`photoka-psd` depends on no workspace crate.** The doc ⇄ PSD mapping lives in `io`. This keeps the PSD crate publishable and reusable by other projects. The same holds for every standalone crate, with one documented exception: `codecs` → `heif` (both standalone and publishable; `STANDALONE_EXCEPTIONS` in `xtask/src/layers.rs`).
-4. **wasm gate:** every crate in L0–L5 (except feature-gated native backends) must build for `wasm32-unknown-unknown`. CI runs `cargo build -p photoka-engine --target wasm32-unknown-unknown --no-default-features --features web`.
+4. **macOS only:** CI builds and tests on macOS. Inherited `cfg(target_arch = "wasm32")` paths are no longer built or checked.
 5. `gpu` is optional for `engine`. Engine features are `gpu` (default on) and `cpu-only`, and `cpu-only` builds are what the headless CLI and CI tests use.
 6. **C dependencies** (optional LibRaw, pdfium) only behind features, only in `codecs`, `raw` or `io`, and never on by default for the web target.
 
@@ -492,7 +490,7 @@ psd/src/
 | Engine | command-level tests: open fixture → dispatch commands → assert snapshot/render; action replays |
 | UI | headless egui tests (egui_kittest) for panels; kept thin because the UI is thin |
 | Perf | criterion benches + budget checks in CI (composite 4k² 20 layers, brush dab throughput, open 100 MP) |
-| Portability | CI matrix: macOS arm64, Windows x64, Linux x64, wasm32 build check |
+| Platform | CI on macOS (arm64); releases are universal (arm64 + x86_64) |
 
 **Performance targets for v1:**
 - Stroke-to-pixel within one frame at 120 Hz.

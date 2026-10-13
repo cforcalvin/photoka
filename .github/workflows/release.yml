@@ -1,3 +1,5 @@
+# Builds the macOS release (universal DMG + CLI zip) and drafts a GitHub Release with them.
+# Push to the `release` branch to cut a release, or run it by hand for a test build.
 name: Release
 
 on:
@@ -17,13 +19,76 @@ concurrency:
   group: release-${{ github.ref }}
   cancel-in-progress: false
 
+env:
+  CARGO_TERM_COLOR: always
+  CARGO_INCREMENTAL: 0
+  RUST_BACKTRACE: 1
+
 jobs:
+  macos:
+    name: macOS universal
+    runs-on: macos-15
+    outputs:
+      version: ${{ steps.v.outputs.version }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          repository: storytold/craft-fonts
+          ref: abb83316d96aa59c1cf64784289e378fe9fa5695
+          path: craft-fonts
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: aarch64-apple-darwin, x86_64-apple-darwin
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: release-macos-universal
+      - name: Apply version override
+        if: inputs.version != ''
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
+        run: cargo xtask version set "$INPUT_VERSION"
+      - id: v
+        name: Resolve version
+        run: echo "version=$(cargo xtask version)" >> "$GITHUB_OUTPUT"
+      # No MACOS_SIGN_IDENTITY: the app is ad-hoc signed and not notarized until Photoka has a
+      # Developer ID certificate (packaging/macos/import-cert.sh, docs/releasing.md).
+      - name: Build and package
+        env:
+          CRAFT_FONTS_DIR: ${{ github.workspace }}/craft-fonts
+          CRAFT_FONTS_REQUIRED: "1"
+        run: packaging/macos/package.sh --arch universal
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-macos
+          path: dist/release/*
+          if-no-files-found: error
+
   release:
-    # Pinned to a commit of the upstream shared workflows; bump deliberately after reviewing changes.
-    # No signing secrets are passed, so the packages are unsigned until Photoka has its own certificates.
-    uses: storytold/craft-common-actions/.github/workflows/release.yml@f0808a5ccbc32869248193ffab0de98d733de451
-    with:
-      app-name: photoka
-      app-title: Photoka
-      craft-fonts-ref: abb83316d96aa59c1cf64784289e378fe9fa5695
-      version: ${{ inputs.version }}
+    name: Draft GitHub Release
+    needs: macos
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: release-macos
+          path: dist
+      - name: Checksums
+        working-directory: dist
+        run: sha256sum -- * > SHA256SUMS.txt && cat SHA256SUMS.txt
+      - name: Create or update the draft release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+          VERSION: ${{ needs.macos.outputs.version }}
+          SHA: ${{ github.sha }}
+        run: |
+          tag="v$VERSION"
+          pre=()
+          case "$VERSION" in *-*) pre=(--prerelease) ;; esac
+          if gh release view "$tag" >/dev/null 2>&1; then
+            gh release upload "$tag" dist/* --clobber
+          else
+            gh release create "$tag" dist/* --draft --target "$SHA" --title "Photoka $VERSION" \
+              --generate-notes "${pre[@]}"
+          fi

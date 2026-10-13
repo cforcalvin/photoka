@@ -1,13 +1,13 @@
-# Quick static checks for the release pipeline (seconds, no Rust build): workflow syntax,
-# packaging shell/PowerShell scripts, and the Linux desktop/AppStream/Flatpak metadata.
+# Quick static checks for the release pipeline (seconds, no Rust build): workflow syntax and the
+# packaging shell scripts.
 name: Packaging lint
 
 on:
   push:
     branches: [main, release]
-    paths: [".github/workflows/**", "packaging/**", "assets/app-icon/**"]
+    paths: [".github/workflows/**", "packaging/**"]
   pull_request:
-    paths: [".github/workflows/**", "packaging/**", "assets/app-icon/**"]
+    paths: [".github/workflows/**", "packaging/**"]
   workflow_dispatch:
 
 permissions:
@@ -19,12 +19,23 @@ concurrency:
 
 jobs:
   lint:
-    # Pinned to a commit of the upstream shared workflows; bump deliberately after reviewing changes.
-    uses: storytold/craft-common-actions/.github/workflows/packaging-lint.yml@f0808a5ccbc32869248193ffab0de98d733de451
-
-  verified-appimage-inputs:
-    name: Verified AppImage inputs
+    name: actionlint + shellcheck
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - run: bash packaging/linux/verified-download-test.sh
+      - uses: actions/checkout@v4
+      # actionlint runs shellcheck on every `run:` block too (shellcheck is on the runner image).
+      - name: actionlint
+        run: |
+          bash <(curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/v1.7.7/scripts/download-actionlint.bash) 1.7.7
+          ./actionlint -color
+      - name: shellcheck
+        run: shellcheck -x packaging/*.sh packaging/macos/*.sh scripts/*.sh examples/plugins/*/build.sh
+      - name: plists
+        run: |
+          python3 - <<'EOF'
+          import plistlib
+          for f in ["packaging/macos/entitlements.plist", "packaging/macos/Info.plist.in"]:
+              with open(f, "rb") as fh:
+                  plistlib.load(fh)
+          print("plists ok")
+          EOF

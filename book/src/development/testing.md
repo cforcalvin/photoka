@@ -8,7 +8,7 @@ cargo clippy -p <package> --all-targets -- -D warnings
 cargo xtask layers
 ```
 
-For changes below or at L6, also run `cargo xtask wasm`. Command changes require the ignored adversarial test:
+Command changes require the ignored adversarial test:
 
 ```sh
 cargo test -p photoka-engine --test panic_hunt -- --ignored

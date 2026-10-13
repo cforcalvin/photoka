@@ -12,7 +12,7 @@
 
 <p align="center">
   <img alt="100% Rust" src="https://img.shields.io/badge/100%25-Rust-b7410e?style=flat-square&logo=rust">
-  <img alt="macOS · Windows · Linux · FreeBSD · Web" src="https://img.shields.io/badge/macOS%20%C2%B7%20Windows%20%C2%B7%20Linux%20%C2%B7%20FreeBSD%20%C2%B7%20Web-native-2f7bf5?style=flat-square">
+  <img alt="macOS" src="https://img.shields.io/badge/macOS-native-2f7bf5?style=flat-square">
   <img alt="License: MIT OR Apache-2.0" src="https://img.shields.io/badge/license-MIT%20%2F%20Apache--2.0-3a3a3a?style=flat-square">
   <img alt="Status: early alpha" src="https://img.shields.io/badge/status-early%20alpha-d69e2e?style=flat-square">
 </p>
@@ -59,7 +59,7 @@
     </td>
     <td width="25%" valign="top">
       <h3>⚡ Native and fast</h3>
-      A GPU compositor on wgpu (Metal, Vulkan, DX12, WebGPU), copy-on-write tiles and multithreaded filters. No Electron, no web view, no waiting.
+      A GPU compositor on wgpu (Metal), copy-on-write tiles and multithreaded filters. No Electron, no web view, no waiting.
     </td>
     <td width="25%" valign="top">
       <h3>🗂️ Real PSD files</h3>
@@ -238,7 +238,6 @@ The desktop app also offers an authenticated, loopback-only control channel (`ph
 - **Engine first:** a pure-data document model and a command engine, with a thin egui UI on top. Layering is enforced at build time across 24 crates.
 - **Two compositors:** a CPU compositor serves as the reference oracle, and a wgpu compositor puts the canvas on the GPU. They are tested against each other.
 - **Copy-on-write tiles:** 256² sparse tiles make undo cheap and huge canvases light, and effect maps are cached per layer state.
-- **Runs in the browser:** the whole engine and UI compile to WebAssembly.
 - **Clean-room:** implemented from public specs and observed behaviour only. No proprietary code, shaders or assets.
 - **Tested:** more than 1,700 tests, including PSD round trips, synthetic generators, compositor oracles and multi-depth checks.
 
@@ -251,7 +250,7 @@ cargo run --release -p photoka -- image.psd   # the desktop app
 cargo test --workspace                           # the test suite
 ```
 
-Japanese fonts for the UI and Type tool come from [craft-fonts](https://github.com/storytold/craft-fonts), an optional build input (desktop release builds always include it). Without it Photoka uses your system's CJK fonts:
+Japanese fonts for the UI and Type tool come from [craft-fonts](https://github.com/storytold/craft-fonts), an optional build input (release builds always include it). Without it Photoka uses your system's CJK fonts:
 
 ```sh
 git clone https://github.com/storytold/craft-fonts ../craft-fonts
@@ -260,26 +259,7 @@ CRAFT_FONTS_DIR="$PWD/../craft-fonts" cargo run --release -p photoka
 
 New contributors and AI agents: start with [`AGENTS.md`](AGENTS.md), then [`docs/`](docs/).
 
-Installers for macOS, Windows, Linux, FreeBSD and the web are attached to each [GitHub release](https://github.com/cforcalvin/photoka/releases). On Linux you can pick an AppImage, a `.deb`, an `.rpm`, a tarball or a Flatpak bundle. The bundle needs the freedesktop runtime from [Flathub](https://flathub.org/setup), which `flatpak` offers to install along with it:
-
-```sh
-flatpak install --user photoka-<version>-linux-x86_64.flatpak   # or -linux-aarch64
-flatpak run io.github.cforcalvin.photoka
-```
-
-The AppImage needs no install: the first run registers its launcher icon and menu entry in `~/.local/share` so the dock shows Photoka's icon on Wayland. Set `PHOTOKA_NO_DESKTOP_INTEGRATION=1` to skip that, and see [`docs/releasing.md`](docs/releasing.md) › Linux to undo it.
-
-On a Wayland session, files dropped on the window don't open yet: winit 0.30, the windowing library under egui, has no Wayland drag and drop (#386). Use File › Open, or copy the image in your file manager and paste it with Ctrl+V. To drag and drop, start Photoka under XWayland: `WAYLAND_DISPLAY= photoka`, `WAYLAND_DISPLAY= ./photoka-<version>-linux-x86_64.AppImage`, or `flatpak run --nosocket=wayland --socket=x11 io.github.cforcalvin.photoka`. On Wayland, Photoka shows the command for your install in a notice until you dismiss it.
-
-On macOS, the command-line tool comes as `photoka-cli-<version>-macos-universal.zip`. Photoka's builds are not code-signed or notarized yet, so macOS asks you to confirm the first launch (Control-click the app and choose Open, or allow it in System Settings › Privacy & Security).
-
-On FreeBSD 14 (x86_64), the release has a tarball laid out like `/usr/local`. Install the runtime libraries, then unpack it there:
-
-```sh
-pkg install libxkbcommon wayland libX11 libXcursor libXrandr libXi libxcb mesa-libs vulkan-loader gtk3 fontconfig freetype2 alsa-lib
-tar -xzf photoka-<version>-freebsd-x86_64.tar.gz --strip-components 1 -C /usr/local
-photoka
-```
+Photoka is a macOS app (macOS 11 or later, Apple silicon and Intel). The app and the command-line tool are attached to each [GitHub release](https://github.com/cforcalvin/photoka/releases); see [Downloads](#downloads). Photoka's builds are not code-signed or notarized yet, so macOS asks you to confirm the first launch (Control-click the app and choose Open, or allow it in System Settings › Privacy & Security).
 
 Maintainers: [`docs/releasing.md`](docs/releasing.md) explains how releases are built, signed and published.
 
@@ -289,8 +269,6 @@ Maintainers: [`docs/releasing.md`](docs/releasing.md) explains how releases are 
 ## Documentation
 
 Developer, architecture, automation, format, and security documentation is maintained in the [Photoka documentation book](book/).
-
-To self-host the browser version with Docker, see [Docker web hosting](packaging/web/README.md#docker).
 
 ## Security
 
@@ -307,46 +285,10 @@ sha256-verified. Fetch them with `cargo xtask corpus --all` and run the tests wi
 
 On GitHub, the [latest release](https://github.com/cforcalvin/photoka/releases/latest) has every build listed below, and [all releases](https://github.com/cforcalvin/photoka/releases) has earlier versions and their notes. `<ver>` in the file names is the version number, and `SHA256SUMS.txt` lists a checksum for every file.
 
-### Windows
-
-| Build | Installer | Portable |
-|---|---|---|
-| x64 (64-bit Intel/AMD) | `photoka-<ver>-windows-x64.msi` | `photoka-<ver>-windows-x64-portable.zip` |
-| arm64 (Snapdragon and other ARM PCs) | `photoka-<ver>-windows-arm64.msi` | `photoka-<ver>-windows-arm64-portable.zip` |
-| x86 (32-bit) | `photoka-<ver>-windows-x86.msi` | `photoka-<ver>-windows-x86-portable.zip` |
-
-Installers and executables are not code-signed yet, so Windows SmartScreen may ask you to confirm.
-
-### macOS
-
 | Build | File | Notes |
 |---|---|---|
 | App, universal (Apple silicon + Intel) | `photoka-<ver>-macos-universal.dmg` | Not signed yet |
 | Command-line tool, universal | `photoka-cli-<ver>-macos-universal.zip` | Not signed yet |
-
-### Linux
-
-| Format | x86_64 | aarch64 (ARM64) | Notes |
-|---|---|---|---|
-| AppImage | `photoka-<ver>-linux-x86_64.AppImage` | `photoka-<ver>-linux-aarch64.AppImage` | Runs anywhere; updates itself with [AppImageUpdate](https://github.com/AppImageCommunity/AppImageUpdate) (`.zsync` files) |
-| Flatpak | `photoka-<ver>-linux-x86_64.flatpak` | `photoka-<ver>-linux-aarch64.flatpak` | Sandboxed; `flatpak install --user <file>` |
-| Debian/Ubuntu | `photoka-<ver>-linux-x86_64.deb` | `photoka-<ver>-linux-aarch64.deb` | |
-| Fedora/RHEL/openSUSE | `photoka-<ver>-linux-x86_64.rpm` | `photoka-<ver>-linux-aarch64.rpm` | |
-| Tarball | `photoka-<ver>-linux-x86_64.tar.gz` | `photoka-<ver>-linux-aarch64.tar.gz` | Unpack anywhere |
-
-RISC-V (riscv64): `photoka-<ver>-linux-riscv64.tar.gz` only, built against Ubuntu 24.04 (needs glibc 2.39+).
-
-### FreeBSD
-
-| Build | File |
-|---|---|
-| x86_64 | `photoka-<ver>-freebsd-x86_64.tar.gz` |
-
-### Web (WebAssembly)
-
-| Build | File | Notes |
-|---|---|---|
-| Static site | `photoka-web-<ver>.zip` | Runs in a modern browser; host it on any static server |
 
 ## Based on PhotoCraft
 

@@ -4,7 +4,6 @@ description = "Headless Photoka: convert, inspect, run commands, batch, MCP serv
 version.workspace = true
 edition.workspace = true
 license.workspace = true
-build = "build.rs"
 
 [features]
 # Open HEIC/HEIF photos (the optional photoka-heif crate). Not default so distributors choose
@@ -30,8 +29,3 @@ photoka-format = { path = "../../crates/format" }
 photoka-codecs = { workspace = true }
 serde_json = { workspace = true }
 tokio = { version = "1", features = ["rt-multi-thread", "macros"] }
-
-[build-dependencies]
-# Icon + VERSIONINFO for photoka-cli.exe; build.rs only uses it when targeting Windows.
-winresource = "0.1"
-

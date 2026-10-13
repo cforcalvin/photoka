@@ -68,7 +68,6 @@ pub const TABLE: &[(&str, Class)] = &[
     // L7 apps and tooling
     ("photoka", Class::Exempt),
     ("cli", Class::Exempt),
-    ("web", Class::Exempt),
     ("xtask", Class::Exempt),
 ];
 
@@ -373,7 +372,7 @@ mod tests {
 
     #[test]
     fn apps_and_xtask_exempt() {
-        for app in ["photoka", "photoka-cli", "photoka-web", "xtask"] {
+        for app in ["photoka", "photoka-cli", "xtask"] {
             assert!(check(&[c(app, &[("egui", Normal, false), ("photoka-ui-egui", Normal, true)])]).is_empty());
         }
     }

@@ -6,7 +6,6 @@
 mod corpus;
 mod corpus_pins;
 mod i18n_coverage;
-mod ico;
 mod layers;
 mod perf;
 mod pinned;
@@ -23,8 +22,7 @@ usage: cargo xtask <command>
 
 commands:
   layers          enforce the crate dependency layering (plan/architecture.md §3)
-  wasm            cargo check --target wasm32-unknown-unknown for the wasm-safe crates
-  ci              fmt --check, clippy -D warnings, test, layers, wasm (stops at first failure)
+  ci              fmt --check, clippy -D warnings, test, layers (stops at first failure)
   corpus [--all | --pngsuite | --psd | --psd-tools | --pixls | --photoshop] [--local] [--update-manifest]
                   show where test corpora live and their pins (xtask/src/corpus_pins.rs), or fetch
                   them into corpus/ (pinned commits, sha256-verified; --all = every corpus but pixls,
@@ -44,8 +42,6 @@ commands:
                   regenerate docs/scorecard.md (--check: fail if it is stale)
   version [set X.Y.Z[-pre]]
                   print the workspace version, or set it (Cargo.toml + Cargo.lock)
-  ico <out.ico> <in.png>...
-                  pack square PNGs (<= 256 px) into a Windows .ico (see packaging/icons.sh)
 ";
 
 fn main() -> ExitCode {
@@ -53,7 +49,6 @@ fn main() -> ExitCode {
     let rest: Vec<&str> = args.iter().skip(1).map(String::as_str).collect();
     let result = match args.first().map(String::as_str) {
         Some("layers") => cmd_layers(),
-        Some("wasm") => cmd_wasm(),
         Some("ci") => cmd_ci(),
         Some("corpus") => corpus::cmd(&rest),
         Some("test-corpus") => corpus::test_cmd(&rest),
@@ -63,7 +58,6 @@ fn main() -> ExitCode {
         Some("perf") => perf::run(&root(), &rest),
         Some("scorecard") => scorecard::run(&root(), &rest),
         Some("version") => version::run(&root(), &rest),
-        Some("ico") => ico::run(&rest),
         Some("-h" | "--help" | "help") | None => {
             print!("{USAGE}");
             Ok(())
@@ -138,48 +132,6 @@ fn cmd_layers() -> Result<(), String> {
     }
 }
 
-/// Workspace packages that must build for wasm32: all L0–L5 crates plus
-/// the egui shell.
-fn wasm_set() -> Result<Vec<String>, String> {
-    let crates = layers::from_metadata(&metadata()?)?;
-    Ok(crates
-        .into_iter()
-        .filter(|c| match layers::classify(&c.name) {
-            Some(layers::Class::Layer(l)) => l <= 5 || layers::short_name(&c.name) == "ui-egui",
-            Some(layers::Class::Standalone) => true,
-            _ => false,
-        })
-        .map(|c| c.name)
-        .collect())
-}
-
-/// Optional features that official builds enable and the web app ships, also checked for wasm32:
-/// (package, feature).
-const WASM_FEATURES: &[(&str, &str)] = &[("photoka-codecs", "heif")];
-
-fn cmd_wasm() -> Result<(), String> {
-    let set = wasm_set()?;
-    let mut results = Vec::new();
-    for pkg in &set {
-        let mut c = cargo();
-        c.args(["check", "--target", "wasm32-unknown-unknown", "-p", pkg]);
-        let ok = run(c, &format!("cargo check --target wasm32-unknown-unknown -p {pkg}")).is_ok();
-        results.push((pkg.clone(), ok));
-    }
-    for (pkg, feature) in WASM_FEATURES {
-        let mut c = cargo();
-        c.args(["check", "--target", "wasm32-unknown-unknown", "-p", pkg, "--features", feature]);
-        let ok = run(c, &format!("cargo check --target wasm32-unknown-unknown -p {pkg} --features {feature}")).is_ok();
-        results.push((format!("{pkg} --features {feature}"), ok));
-    }
-    println!("\nwasm32-unknown-unknown check:");
-    for (p, ok) in &results {
-        println!("  {:<6} {p}", if *ok { "ok" } else { "FAIL" });
-    }
-    let failed = results.iter().filter(|r| !r.1).count();
-    if failed == 0 { Ok(()) } else { Err(format!("{failed} crate(s) failed the wasm check")) }
-}
-
 fn cmd_parity() -> Result<(), String> {
     let mut c = cargo();
     c.args(["run", "-q", "-p", "photoka-ui-egui", "--example", "parity", "--", "--write", "docs/parity-checklist.md"]);
@@ -214,7 +166,6 @@ fn cmd_ci() -> Result<(), String> {
             }),
         ),
         ("layers", Box::new(cmd_layers)),
-        ("wasm", Box::new(cmd_wasm)),
     ];
     let mut done = Vec::new();
     for (name, f) in &steps {

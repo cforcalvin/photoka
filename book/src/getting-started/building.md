@@ -1,10 +1,6 @@
 # Building
 
-Photoka uses the Rust workspace at the repository root. Install the stable Rust toolchain, clone the repository, and run commands from that root.
-
-On Linux, install the windowing, GL and GTK development packages first. The development guide's
-[Prerequisites](https://github.com/cforcalvin/photoka/blob/main/docs/development.md#prerequisites)
-list them for Debian/Ubuntu, Fedora, Arch and openSUSE.
+Photoka is a macOS app and uses the Rust workspace at the repository root. Install the stable Rust toolchain and the Xcode command-line tools, clone the repository, and run commands from that root.
 
 ```sh
 cargo build --workspace
@@ -19,10 +15,9 @@ cargo fmt --all -- --check
 cargo test --workspace
 cargo clippy --workspace --all-targets -- -D warnings
 cargo xtask layers
-cargo xtask wasm
 ```
 
-`cargo xtask wasm` requires the `wasm32-unknown-unknown` target. UI work should also be checked using the offscreen snapshot example described in the [development guide](https://github.com/cforcalvin/photoka/blob/main/docs/development.md).
+UI work should also be checked using the offscreen snapshot example described in the [development guide](https://github.com/cforcalvin/photoka/blob/main/docs/development.md).
 
 ## Build the documentation
 

@@ -2,36 +2,8 @@
 
 ## Prerequisites
 
-- Rust stable (1.95+). Add the web target with `rustup target add wasm32-unknown-unknown`.
-- macOS, Windows or Linux. On Linux, install the windowing, GL and GTK development packages:
-  - Debian/Ubuntu: `sudo apt install libxkbcommon-dev libwayland-dev libx11-dev libxrandr-dev libxi-dev libgl1-mesa-dev libgtk-3-dev`
-  - Fedora/RHEL: `sudo dnf install libxkbcommon-devel wayland-devel libX11-devel libXrandr-devel libXi-devel mesa-libGL-devel gtk3-devel`
-  - Arch: `sudo pacman -S libxkbcommon wayland libx11 libxrandr libxi mesa gtk3`
-  - openSUSE: `sudo zypper install libxkbcommon-devel wayland-devel libX11-devel libXrandr-devel libXi-devel Mesa-libGL-devel gtk3-devel`
-
-### Windows source builds
-
-Use the Rust MSVC toolchain and install Visual Studio or Microsoft C++ Build Tools with the
-**Desktop development with C++** workload. Follow Microsoft's
-[Rust setup guide](https://learn.microsoft.com/en-us/windows/dev-environment/rust/setup),
-then open a new terminal and check `cargo --version` and `rustc --version`.
-
-On Windows 11, Smart App Control can block Cargo, rustc or executables generated during a build.
-If a build reports `An Application Control policy has blocked this file. (os error 4551)`
-([#1585](https://github.com/storytold/photocraft/issues/1585)), check:
-
-- **Windows Security → App & browser control → Smart App Control settings** for its status.
-- **Event Viewer → Applications and Services Logs → Microsoft → Windows → CodeIntegrity →
-  Operational** for the blocked executable and policy, especially on managed machines.
-
-This error indicates an application-control restriction; moving `CARGO_TARGET_DIR` or
-reinstalling Rust does not establish that the blocked executable is trusted. See Microsoft's
-[Smart App Control FAQ](https://support.microsoft.com/en-us/windows/security/threat-malware-protection/smart-app-control-frequently-asked-questions)
-for the available controls; there is no per-app exception. On a managed device, ask your
-administrator about an approved development environment. If you only want to run Photoka,
-use the [packaged Windows release](https://github.com/cforcalvin/photoka/releases) to avoid
-building locally; the downloaded app is still subject to Windows application-control checks.
-
+- Rust stable (1.95+).
+- macOS 11 or later with the Xcode command-line tools (`xcode-select --install`). Photoka is a macOS-only app; for a universal release build also run `rustup target add aarch64-apple-darwin x86_64-apple-darwin`.
 ## Build and run
 
 ```sh
@@ -39,7 +11,7 @@ cargo run --release -p photoka -- path/to/image.psd      # desktop app
 cargo run --release -p photoka -- --control 7878 --control-token-file .private/control.token \
   --automation-read-root work --automation-write-root work
 cargo test --workspace                                     # everything
-cargo xtask ci                                             # fmt + clippy + tests + layers + wasm
+cargo xtask ci                                             # fmt + clippy + tests + layers
 cargo xtask stats                                          # tests and lines per crate
 cargo xtask parity                                         # Photoshop menu coverage -> docs/parity-checklist.md
 ```
@@ -77,8 +49,7 @@ CRAFT_FONTS_DIR="$PWD/../craft-fonts" cargo test --workspace     # runs the Japa
 - `crates/text/build.rs` reads `$CRAFT_FONTS_DIR/fonts/manifest.txt` and embeds the fonts as `photoka_text::CRAFT_FONTS` (`crates/text/src/craft_fonts.rs`). Unset, `CRAFT_FONTS` is empty and the build is unchanged. A bad path is a build warning, or an error with `CRAFT_FONTS_REQUIRED=1` (release builds set both).
 - **UI:** the Japanese fonts (BIZ UDPGothic Regular first) are the first Japanese fallback in the lazy CJK loader (`crates/ui-egui/src/cjk_fonts.rs`), ahead of the system Japanese fonts and in the same locale script order, appended last to every egui family with the usual baseline alignment.
 - **Type tool:** the text engine registers them in `FontDb::new` (so also with no system fonts) and puts them first in the Japanese slot of the locale-ordered fallback list: BIZ UDPGothic for sans runs, Shippori Mincho / BIZ UDMincho for serif runs.
-- **Web:** the wasm32 build never embeds craft-fonts, even with `CRAFT_FONTS_DIR` set: measured on 2026-10-06, the UI face alone took the release wasm from 24.19 MB to 28.87 MB, over the 24 MiB gate in `packaging/web/package.sh`. Instead it loads fonts served next to it, on demand: `fonts/manifest.txt` beside `index.html`, in craft-fonts' manifest format (`crates/text/src/served.rs`; hosting: `packaging/web/README.md` › Fonts). `PHOTOKA_WEB_FONTS_DIR="$PWD/../craft-fonts" packaging/web/package.sh` puts craft-fonts there. Served families are in the font menus and are fetched when picked or when a document's text needs them; they aren't in the script fallback list yet, so Japanese text set in a Latin font still needs a Japanese font picked (#1615).
-- Tests that need the fonts skip with a message when `CRAFT_FONTS` is empty; CI's Linux job runs the tests a second time with `CRAFT_FONTS_DIR` set. Desktop releases check out craft-fonts at the commit pinned in `.github/workflows/release.yml` (`CRAFT_FONTS_REF`; ci.yml pins the same commit) and ship each font's `OFL.txt` as `OFL-<family>.txt`.
+- Tests that need the fonts skip with a message when `CRAFT_FONTS` is empty; CI runs the tests a second time with `CRAFT_FONTS_DIR` set. Releases check out craft-fonts at the commit pinned in `.github/workflows/release.yml` (`CRAFT_FONTS_REF`; ci.yml pins the same commit) and ship each font's `OFL.txt` as `OFL-<family>.txt`.
 
 ## Graphics startup and device loss
 
@@ -340,41 +311,6 @@ on a fixed macOS runner every night (and on demand), posts the table as the job 
 release build of the benches alone takes longer than PR CI should. To give the nightly runner
 its own baseline, run the workflow by hand with `update_baseline` and commit the `perf-baseline`
 artifact as `perf/baseline.json`.
-
-## Web build
-
-`apps/photoka-web` runs the same `PhotokaApp` in the browser through eframe's web runner. The renderer is wgpu: WebGPU where the browser has it, WebGL2 otherwise. It is Rust only. The only JavaScript is the glue that wasm-bindgen generates.
-
-```sh
-brew install trunk                 # or: cargo install trunk --locked
-cd apps/photoka-web
-trunk build --release              # writes ../../dist/web (index.html, .js glue, .wasm)
-trunk serve --release              # dev server on http://127.0.0.1:8765
-```
-
-Any static file server works for `dist/web`, for example `python3 -m http.server 8765` run inside that directory. Trunk downloads the matching `wasm-bindgen` and `wasm-opt` itself. `trunk build --release` uses the `wasm-release` Cargo profile (`data-cargo-profile` in `index.html`: fat LTO, opt-level "z" for the UI, engine, I/O and web shells and for large crates off the hot paths (document model, file parsers, JSON, SVG parsing, shader translation), "s" for other crates except pixel processing, which keeps level 3). The UI override reduces browser code size while retaining the speed-oriented settings for filters and compositing. Serve the `.wasm` with compression; its raw size varies with the source and compiler. Keep it under 24 MiB (`packaging/web/package.sh` enforces this; Cloudflare's per-file cap is 25 MiB). Pull-request CI also builds the actual browser app with the same pinned Trunk version as the release job and runs `packaging/web/package.sh`, including the relative-URL and 24 MiB checks. The `web build and wasm size gate` check runs on main and on PRs that change something the web build compiles or packages (`apps/photoka-web`, `packaging/web`, crate sources and manifests, `Cargo.toml`/`Cargo.lock`, the CI workflow), and reports the resulting wasm size in the Actions job summary. The web build never embeds craft-fonts (see Fonts above). To see where the bytes go, run `twiggy top -n 40` on `target/wasm32-unknown-unknown/wasm-release/photoka-web.wasm` (before wasm-opt strips the names).
-
-URL flags: `?webgl` forces the WebGL2 backend, and `?cpu` forces the CPU canvas path.
-
-To build and serve the web app entirely in Docker, run from the repository root:
-
-```sh
-docker build --load -t photoka-web:local .
-docker run --rm -p 8080:8080 photoka-web:local
-```
-
-Open http://localhost:8080/. See [Docker hosting](../packaging/web/README.md#docker) for
-HTTPS/reverse-proxy deployment and browser limitations.
-
-How the web shell (`apps/photoka-web/src/web.rs`) differs from desktop:
-
-- **Open** uses `rfd::AsyncFileDialog`. The bytes arrive asynchronously in `Services::inbox`, which the app drains every frame.
-- **Save / Save As / Export** trigger a browser download of the encoded bytes. The shell does this with a Blob, an object URL and a temporary `<a download>`, all created from Rust. There is no save dialog, so the suggested name becomes the download name.
-- **Drag-and-drop:** `WebShell` takes the frame's `dropped_files` before the app sees them. It reads each file with `DroppedFile::bytes_async` and pushes the bytes into the inbox.
-- **Startup failures:** `index.html` shows "Loading Photoka…" until the app removes it, or replaces it with the error when the web runner fails to start. If the `.wasm` never downloads or doesn't match the page's `.js` (a stale cached `index.html` after a deploy), no Rust runs at all, so the page itself (CSS only, no script) adds a hint with a Reload link after 20 seconds.
-- **No control server:** browsers can't listen on TCP. To automate the web build, drive headless Chrome with `--remote-debugging-port`. `Page.setInterceptFileChooserDialog` plus `DOM.setFileInputFiles` covers Open, `Input.dispatchDragEvent` with `files` covers drops, and `Browser.setDownloadBehavior` captures downloads.
-- Headless Chrome on macOS (`--headless=new --enable-unsafe-webgpu`) gets a real WebGPU adapter.
-
 
 ## Indexed Color timings
 
