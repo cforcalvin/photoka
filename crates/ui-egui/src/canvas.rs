@@ -3487,11 +3487,8 @@ pub fn canvas_view(app: &mut PhotokaApp, ui: &mut egui::Ui, idx: usize, rect: Re
                         let painting = app.drag.is_some();
                         let brush = &app.session.tools.brush;
                         let full = (brush.size / 2.0 * xf.zoom).max(1.0);
-                        let r = if cur.painting == PaintingCursor::NormalTip {
-                            photoka_paint::half_coverage_radius(full, brush.hardness).max(1.0)
-                        } else {
-                            full
-                        };
+                        let r =
+                            if cur.painting == PaintingCursor::NormalTip { photoka_paint::half_coverage_radius(full, brush.hardness).max(1.0) } else { full };
                         match cur.painting {
                             PaintingCursor::Standard => egui::CursorIcon::Default,
                             PaintingCursor::Precise => crate::tool_cursor::crosshair(&painter, p, 6.0, 0.0),

@@ -98,8 +98,7 @@ fn write_clipping_indicator_preview() {
                     .input(|input| input.events.iter().find_map(|event| if let Event::Screenshot { image, .. } = event { Some(image.clone()) } else { None }))
                     .unwrap();
                 let rgba = image.pixels.iter().flat_map(|pixel| pixel.to_array()).collect();
-                let image =
-                    photoka_codecs::Image::from_u8(image.size[0] as u32, image.size[1] as u32, photoka_codecs::ChannelLayout::Rgba, rgba).unwrap();
+                let image = photoka_codecs::Image::from_u8(image.size[0] as u32, image.size[1] as u32, photoka_codecs::ChannelLayout::Rgba, rgba).unwrap();
                 let png = photoka_codecs::encode(&image, photoka_codecs::Format::Png, &Default::default()).unwrap();
                 std::fs::write(output.join(format!("{}-{width:.0}-{scale:.0}x.png", theme.id())), png).unwrap();
             }

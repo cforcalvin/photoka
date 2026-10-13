@@ -49,10 +49,7 @@ fn is_color_name(name: &str) -> bool {
 
 /// The Custom… colour as "#rrggbb", starting from Cyan's.
 fn custom_color(f: &Map<String, Value>) -> String {
-    f.get("customColor")
-        .and_then(Value::as_str)
-        .filter(|h| photoka_engine::prefs::parse_hex(h).is_some())
-        .map_or_else(|| "#4affff".to_string(), str::to_string)
+    f.get("customColor").and_then(Value::as_str).filter(|h| photoka_engine::prefs::parse_hex(h).is_some()).map_or_else(|| "#4affff".to_string(), str::to_string)
 }
 
 pub fn owns(fields: &Map<String, Value>) -> bool {

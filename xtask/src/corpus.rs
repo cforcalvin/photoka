@@ -89,9 +89,9 @@ fn local_clone() -> Result<PathBuf, String> {
         return Ok(PathBuf::from(p));
     }
     let sibling = root().parent().map(|p| p.join("photocraft-corpus"));
-    sibling.filter(|s| s.join("photoshop").is_dir()).ok_or_else(|| {
-        "no local photocraft-corpus clone: expected ../photocraft-corpus next to this checkout, or set PHOTOKA_CORPUS_REPO=<path>".to_string()
-    })
+    sibling
+        .filter(|s| s.join("photoshop").is_dir())
+        .ok_or_else(|| "no local photocraft-corpus clone: expected ../photocraft-corpus next to this checkout, or set PHOTOKA_CORPUS_REPO=<path>".to_string())
 }
 
 /// Fetches every corpus that is missing or stale (verified ones are left alone). With `local`,

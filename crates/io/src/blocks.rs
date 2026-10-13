@@ -588,8 +588,7 @@ pub(crate) fn parse_prefix_versioned(data: &[u8]) -> Option<Descriptor> {
 /// placement. A degenerate or non-finite box falls back to the source rect.
 pub(crate) fn placed_frame(warp: Option<&photoka_geom::warp::Warp>, w: f64, h: f64) -> [f64; 4] {
     let rect = [0.0, 0.0, w, h];
-    let Some(m) = warp.filter(|wp| wp.style == photoka_geom::warp::WarpStyle::Custom).and_then(|wp| wp.mesh.as_ref()).filter(|m| m.points.len() == 16)
-    else {
+    let Some(m) = warp.filter(|wp| wp.style == photoka_geom::warp::WarpStyle::Custom).and_then(|wp| wp.mesh.as_ref()).filter(|m| m.points.len() == 16) else {
         return rect;
     };
     let inf = f64::INFINITY;

@@ -452,11 +452,7 @@ fn reveal_in_finder_dry_run_and_enabled() {
     s.edit("linked", |doc, active| {
         let mut l = Layer::new(
             "linked",
-            LayerContent::Smart(photoka_doc::SmartObject::new(
-                SmartSource::Linked { path: "/tmp/pics/a.png".into() },
-                photoka_geom::Affine::IDENTITY,
-                None,
-            )),
+            LayerContent::Smart(photoka_doc::SmartObject::new(SmartSource::Linked { path: "/tmp/pics/a.png".into() }, photoka_geom::Affine::IDENTITY, None)),
         );
         l.visible = true;
         *active = Some(doc.insert_above(*active, l));

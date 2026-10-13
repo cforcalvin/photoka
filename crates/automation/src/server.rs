@@ -557,10 +557,8 @@ fn downscale_png(png: &[u8], max_side: u32) -> Result<Option<Vec<u8>>, Automatio
             out[di..di + 4].copy_from_slice(&src[si..si + 4]);
         }
     }
-    let small =
-        photoka_codecs::Image::from_u8(nw, nh, photoka_codecs::ChannelLayout::Rgba, out).map_err(|error| AutomationError::Other(error.to_string()))?;
-    let bytes =
-        photoka_codecs::encode(&small, photoka_codecs::Format::Png, &Default::default()).map_err(|error| AutomationError::Other(error.to_string()))?;
+    let small = photoka_codecs::Image::from_u8(nw, nh, photoka_codecs::ChannelLayout::Rgba, out).map_err(|error| AutomationError::Other(error.to_string()))?;
+    let bytes = photoka_codecs::encode(&small, photoka_codecs::Format::Png, &Default::default()).map_err(|error| AutomationError::Other(error.to_string()))?;
     Ok(Some(bytes))
 }
 

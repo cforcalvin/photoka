@@ -443,11 +443,7 @@ fn guides_and_alpha_names_roundtrip() {
     for name in ["Spot \u{e9}", "Alpha 2"] {
         d.channels.push(photoka_doc::AlphaChannel::new(
             name,
-            photoka_raster::Surface::new(photoka_color::PixelFormat::new(
-                photoka_color::ColorMode::Grayscale,
-                photoka_color::SampleType::U8,
-                false,
-            )),
+            photoka_raster::Surface::new(photoka_color::PixelFormat::new(photoka_color::ColorMode::Grayscale, photoka_color::SampleType::U8, false)),
         ));
     }
     let f = document_to_psd(&d);
@@ -495,8 +491,7 @@ fn merged_composite_unmattes_photoshop_white() {
     // HDR and negative straight samples must survive the actual F32 PSD import boundary.
     let mut hdr = testgen::merged_only(Version::Psd, ColorMode::Rgb, 32, Compression::Raw, 1, 1);
     hdr.header.channels = 4;
-    hdr.image_data =
-        photoka_psd::ImageData { compression: Compression::Raw, data: [1.5_f32, 0.25, 0.5, 0.5].into_iter().flat_map(f32::to_be_bytes).collect() };
+    hdr.image_data = photoka_psd::ImageData { compression: Compression::Raw, data: [1.5_f32, 0.25, 0.5, 0.5].into_iter().flat_map(f32::to_be_bytes).collect() };
     assert_eq!(merged_composite(&hdr).unwrap(), vec![[2.0, -0.5, 0.0, 0.5]]);
     let mut deep = testgen::merged_only(Version::Psd, ColorMode::Rgb, 16, Compression::Raw, 1, 1);
     deep.header.channels = 4;

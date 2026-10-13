@@ -731,10 +731,8 @@ mod title_tests {
     }
 
     fn open_named(app: &mut crate::PhotokaApp, name: &str) {
-        app.session.add_document(
-            photoka_doc::Document::new(name, photoka_doc::Size::new(4, 4), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8),
-            None,
-        );
+        app.session
+            .add_document(photoka_doc::Document::new(name, photoka_doc::Size::new(4, 4), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8), None);
     }
 
     #[test]
@@ -3651,15 +3649,7 @@ fn background_drop_refused(doc: &photoka_doc::Document, payload: &Value, target:
 /// Drag a layer row to reorder: drop above, below, or inside an existing group. With ⌥ held on
 /// release the layers stay put and copies land there instead (Photoshop).
 /// Multi-layer moves are atomic (one undo step), using the engine's stable document order.
-fn layer_drag_and_drop(
-    app: &PhotokaApp,
-    ctx: &egui::Context,
-    ui: &egui::Ui,
-    l: &Layer,
-    rect: Rect,
-    resp: &egui::Response,
-    actions: &mut Vec<(String, Value)>,
-) {
+fn layer_drag_and_drop(app: &PhotokaApp, ctx: &egui::Context, ui: &egui::Ui, l: &Layer, rect: Rect, resp: &egui::Response, actions: &mut Vec<(String, Value)>) {
     let t = Tokens::get(ctx);
     let key = egui::Id::new("layer-drag");
     // A drag from the mask thumbnail (`starts_mask_drag`) moves the mask, not the layer.
@@ -4041,9 +4031,8 @@ mod color_tests {
             let mut app = PhotokaApp::new(photoka_engine::Session::new(), crate::Services::default());
             app.session.tools.foreground = [1.0, 0.0, 0.0, 1.0];
             app.session.tools.background = [0.0, 0.0, 1.0, 1.0];
-            let mut h = egui_kittest::Harness::builder()
-                .with_size(vec2(80.0, 120.0))
-                .build_ui_state(|ui, app: &mut PhotokaApp| color_chips(app, ui, two_columns), app);
+            let mut h =
+                egui_kittest::Harness::builder().with_size(vec2(80.0, 120.0)).build_ui_state(|ui, app: &mut PhotokaApp| color_chips(app, ui, two_columns), app);
             PhotokaApp::setup_context(&h.ctx, kind);
             h.run_steps(2);
             h.get_by_label("Swap colours (X)").click();
@@ -4452,8 +4441,7 @@ mod snapshot_row_tests {
         app.run("history.newSnapshot", json!({})).unwrap();
         app.run("edit.fill", json!({"color": "#0000ff"})).unwrap();
         // 60 fps steps, so two clicks a frame apart count as a double-click.
-        let mut h =
-            Harness::builder().with_size(vec2(300.0, 400.0)).with_step_dt(1.0 / 60.0).build_ui_state(|ui, app: &mut PhotokaApp| history(app, ui), app);
+        let mut h = Harness::builder().with_size(vec2(300.0, 400.0)).with_step_dt(1.0 / 60.0).build_ui_state(|ui, app: &mut PhotokaApp| history(app, ui), app);
         h.run_steps(3);
         let steps = h.state().session.active().unwrap().history.entries().len();
         h.get_by_label("Snapshot 1").click();

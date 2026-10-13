@@ -483,9 +483,8 @@ fn delete_with_the_mask_targeted_edits_the_mask_not_the_layer() {
         let (x, y) = ((sel.x0 + sel.x1) / 2, (sel.y0 + sel.y1) / 2);
         h.state_mut().ui.mask_target = true;
         h.run_steps(2);
-        let layer_pixels = |h: &Harness<'_, PhotokaApp>| {
-            h.state().session.active().unwrap().doc.layer(layer).and_then(|l| l.surface().cloned()).map(|s| s.read_region(sel))
-        };
+        let layer_pixels =
+            |h: &Harness<'_, PhotokaApp>| h.state().session.active().unwrap().doc.layer(layer).and_then(|l| l.surface().cloned()).map(|s| s.read_region(sel));
         let mask_at = |h: &Harness<'_, PhotokaApp>| {
             h.state().session.active().unwrap().doc.layer(layer).and_then(|l| l.mask.as_ref()).map(|m| m.surface.sample_channel(x, y, 0))
         };

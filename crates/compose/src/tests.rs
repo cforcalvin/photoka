@@ -719,12 +719,7 @@ fn fx_doc(effects: Vec<Effect>) -> Document {
 }
 
 fn stroke(size: f32, position: StrokePosition) -> Effect {
-    Effect::Stroke(StrokeFx {
-        common: FxCommon::new(photoka_color::BlendMode::Normal, 1.0),
-        size,
-        position,
-        paint: FxPaint::Color(Color::rgb(0.0, 0.0, 1.0)),
-    })
+    Effect::Stroke(StrokeFx { common: FxCommon::new(photoka_color::BlendMode::Normal, 1.0), size, position, paint: FxPaint::Color(Color::rgb(0.0, 0.0, 1.0)) })
 }
 
 #[test]

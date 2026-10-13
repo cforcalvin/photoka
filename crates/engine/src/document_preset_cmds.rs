@@ -11,8 +11,7 @@ use crate::{Result, Session};
 
 pub(crate) const MAX_DIMENSION: u32 = 300_000;
 // What `file.new` creates must reopen: the `.photoka` loader's default canvas budget covers it (#2935).
-const _: () =
-    assert!(photoka_format::MAX_CANVAS_SIDE >= MAX_DIMENSION && photoka_format::MAX_CANVAS_PIXELS >= MAX_DIMENSION as u64 * MAX_DIMENSION as u64);
+const _: () = assert!(photoka_format::MAX_CANVAS_SIDE >= MAX_DIMENSION && photoka_format::MAX_CANVAS_PIXELS >= MAX_DIMENSION as u64 * MAX_DIMENSION as u64);
 pub(crate) const MAX_RESOLUTION: f64 = 30_000.0;
 const MAX_PRESETS: usize = 256;
 /// File › New › Recent keeps this many settings, like Photoshop's Recent tab.

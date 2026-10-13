@@ -404,8 +404,7 @@ mod tests {
             std::process::id(),
             SystemTime::now().duration_since(UNIX_EPOCH).map(|d| d.as_nanos()).unwrap_or(0)
         ));
-        let doc =
-            Arc::new(Document::new("Kept", photoka_doc::Size { width: 4, height: 4 }, photoka_color::ColorMode::Rgb, photoka_color::SampleType::U8));
+        let doc = Arc::new(Document::new("Kept", photoka_doc::Size { width: 4, height: 4 }, photoka_color::ColorMode::Rgb, photoka_color::SampleType::U8));
         let saver = Autosaver::new(&dir, "kept");
         saver.request(doc.clone(), 1, None, SaveOptions::default());
         assert!(saver.flush().is_some_and(|r| r.is_ok()));

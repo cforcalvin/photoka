@@ -342,11 +342,7 @@ fn adaptive_wide_angle(s: &mut Session, p: &Value) -> Result<Value> {
     let interp = Interp::parse(p.get("interpolation").and_then(Value::as_str).unwrap_or("bicubic"));
     let id = run_filter(s, WIDE, "Adaptive Wide Angle", stored.clone(), true, &|surf, canvas| {
         let tris = mesh.triangles();
-        if canvas == frame {
-            photoka_algo::warp::warp_triangles(surf, canvas, &mesh.verts, &tris, interp)
-        } else {
-            wideangle::apply(surf, canvas, &wa, interp)
-        }
+        if canvas == frame { photoka_algo::warp::warp_triangles(surf, canvas, &mesh.verts, &tris, interp) } else { wideangle::apply(surf, canvas, &wa, interp) }
     })?;
     let model = match cam.model {
         wideangle::WideModel::Fisheye => "fisheye",

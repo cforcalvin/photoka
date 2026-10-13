@@ -941,8 +941,7 @@ pub fn body(app: &mut PhotokaApp, ui: &mut egui::Ui, f: &mut Map<String, Value>)
                         ui.horizontal(|ui| {
                             ui.label(RichText::new(tl!(&label)).color(t.text_dim));
                             let mut cur = disp.get(key).and_then(Value::as_str).unwrap_or("Normal").to_string();
-                            let opts: Vec<(String, &str)> =
-                                photoka_color::BlendMode::LAYER_MODES.iter().map(|m| (m.label().to_string(), m.label())).collect();
+                            let opts: Vec<(String, &str)> = photoka_color::BlendMode::LAYER_MODES.iter().map(|m| (m.label().to_string(), m.label())).collect();
                             if widgets::dropdown(ui, &format!("fx-blend-{sel_kind}"), &mut cur, &opts, 150.0) {
                                 let value = json!(cur);
                                 disp[key] = value.clone();
@@ -1590,9 +1589,7 @@ mod tests {
         let mut app = PhotokaApp::new(photoka_engine::Session::new(), Default::default());
         let mut layer = photoka_doc::Layer::new("L", photoka_doc::LayerContent::Adjustment(photoka_doc::Adjustment::Invert));
         layer.advanced.knockout = photoka_doc::Knockout::Deep;
-        for mode in
-            [photoka_color::ColorMode::Rgb, photoka_color::ColorMode::Cmyk, photoka_color::ColorMode::Lab, photoka_color::ColorMode::Grayscale]
-        {
+        for mode in [photoka_color::ColorMode::Rgb, photoka_color::ColorMode::Cmyk, photoka_color::ColorMode::Lab, photoka_color::ColorMode::Grayscale] {
             let mut f = initial_fields(&layer, Some(BLENDING), 120.0);
             set_blending_fields(&mut f, &layer, mode);
             let mut out = ctx.run_ui(Default::default(), |ui| body(&mut app, ui, &mut f));

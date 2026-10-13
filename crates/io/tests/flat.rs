@@ -658,8 +658,7 @@ fn tga_transparency_reopens_as_alpha_1() {
 fn tga_alpha_channel_wins_over_transparency_and_skips_spot_channels() {
     let mut d = with_alpha_channel(single(ColorMode::Rgb, SampleType::U8, true), "Alpha 2");
     let spot = photoka_raster::Surface::new(photoka_color::PixelFormat::new(ColorMode::Grayscale, SampleType::U8, false));
-    let spot =
-        photoka_doc::AlphaChannel { spot: Some((photoka_color::Color::rgb(1.0, 0.0, 0.0), 1.0)), ..photoka_doc::AlphaChannel::new("Spot", spot) };
+    let spot = photoka_doc::AlphaChannel { spot: Some((photoka_color::Color::rgb(1.0, 0.0, 0.0), 1.0)), ..photoka_doc::AlphaChannel::new("Spot", spot) };
     d.channels.insert(0, spot);
     let r = export(&d, "a.tga", &ExportOptions::default()).unwrap();
     let (bpp, alpha_bits, img) = tga(&r.bytes);
@@ -868,8 +867,7 @@ fn tga_default_bits_follow_the_alpha_channels() {
     assert_eq!(tga_default_bits(&d), TgaBits::Bits24, "transparency alone");
     let mut spot = d.clone();
     let s = photoka_raster::Surface::new(photoka_color::PixelFormat::GRAY8);
-    spot.channels
-        .push(photoka_doc::AlphaChannel { spot: Some((photoka_color::Color::rgb(1.0, 0.0, 0.0), 1.0)), ..photoka_doc::AlphaChannel::new("Spot", s) });
+    spot.channels.push(photoka_doc::AlphaChannel { spot: Some((photoka_color::Color::rgb(1.0, 0.0, 0.0), 1.0)), ..photoka_doc::AlphaChannel::new("Spot", s) });
     assert_eq!(tga_default_bits(&spot), TgaBits::Bits24, "spot channel");
     assert_eq!(tga_default_bits(&with_alpha_channel(d, "Alpha 1")), TgaBits::Bits32);
     assert_eq!((TgaBits::from_bits(24), TgaBits::from_bits(32), TgaBits::from_bits(16)), (Some(TgaBits::Bits24), Some(TgaBits::Bits32), None));

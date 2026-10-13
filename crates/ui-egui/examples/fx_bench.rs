@@ -14,9 +14,7 @@ use std::time::Instant;
 
 use eframe::wgpu;
 use photoka_color::{BlendMode, Color, ColorMode, SampleType};
-use photoka_doc::{
-    Adjustment, Bevel, BevelStyle, BevelTechnique, Contour, Document, Effect, FxCommon, FxPaint, Layer, LayerContent, StrokeFx, StrokePosition,
-};
+use photoka_doc::{Adjustment, Bevel, BevelStyle, BevelTechnique, Contour, Document, Effect, FxCommon, FxPaint, Layer, LayerContent, StrokeFx, StrokePosition};
 use photoka_geom::{Rect, Size};
 use serde_json::json;
 

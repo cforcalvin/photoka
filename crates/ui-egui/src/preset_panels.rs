@@ -1107,12 +1107,12 @@ pub fn clone_source_panel(app: &mut PhotokaApp, ui: &mut egui::Ui) {
         }
     });
     ui.add_space(4.0);
-    let src_line =
-        match (slot.source, slot.layer.and_then(|l| app.session.active().and_then(|d| d.doc.layer(photoka_doc::LayerId(l)).map(|x| x.name.clone())))) {
-            (Some(_), Some(l)) => format!("Source: {} : {l}", app.session.active().map(|d| d.doc.name.clone()).unwrap_or_default()),
-            (Some(_), None) => "Source: set".to_string(),
-            _ => crate::i18n::fmt(tl!("Source: not set ({key}-click with Clone Stamp)"), &[("key", &crate::shortcuts::pretty("Alt"))]),
-        };
+    let src_line = match (slot.source, slot.layer.and_then(|l| app.session.active().and_then(|d| d.doc.layer(photoka_doc::LayerId(l)).map(|x| x.name.clone()))))
+    {
+        (Some(_), Some(l)) => format!("Source: {} : {l}", app.session.active().map(|d| d.doc.name.clone()).unwrap_or_default()),
+        (Some(_), None) => "Source: set".to_string(),
+        _ => crate::i18n::fmt(tl!("Source: not set ({key}-click with Clone Stamp)"), &[("key", &crate::shortcuts::pretty("Alt"))]),
+    };
     ui.label(egui::RichText::new(src_line).color(t.text_dim).size(11.0));
     ui.add_space(4.0);
     let lbl = |ui: &mut egui::Ui, s: &str| {

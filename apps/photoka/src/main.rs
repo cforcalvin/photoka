@@ -428,9 +428,7 @@ fn main() -> eframe::Result {
                 }
             }
             let fallback_reason = std::env::var("PHOTOKA_GPU_STARTUP_FAILURE").ok().or_else(|| {
-                (app.perf.gpu_info.canvas == "cpu" && mode != photoka_engine::prefs::RenderingMode::Cpu)
-                    .then(|| app.perf.gpu_info.fallback.clone())
-                    .flatten()
+                (app.perf.gpu_info.canvas == "cpu" && mode != photoka_engine::prefs::RenderingMode::Cpu).then(|| app.perf.gpu_info.fallback.clone()).flatten()
             });
             if let Some(reason) = fallback_reason {
                 photoka_ui_egui::gpu_status::queue_fallback_notice(&mut app, &reason);

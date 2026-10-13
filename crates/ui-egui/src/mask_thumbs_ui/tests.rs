@@ -571,10 +571,8 @@ fn mask_view_gestures_fail_gracefully_without_a_mask() {
     assert_eq!(mask_view(&h), serde_json::Value::Null);
     h.run_steps(2);
     // A stale view (layer gone) draws nothing instead of panicking.
-    h.state_mut().session.active_mut().unwrap().channel_view.layer_mask = Some(photoka_engine::mask_view_cmds::LayerMaskView {
-        layer: photoka_doc::LayerId(987_654),
-        mode: photoka_engine::mask_view_cmds::MaskViewMode::Gray,
-    });
+    h.state_mut().session.active_mut().unwrap().channel_view.layer_mask =
+        Some(photoka_engine::mask_view_cmds::LayerMaskView { layer: photoka_doc::LayerId(987_654), mode: photoka_engine::mask_view_cmds::MaskViewMode::Gray });
     assert!(canvas_px(&h).is_none());
     h.run_steps(2);
     // The mask goes while it is shown: the view ends.

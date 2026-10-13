@@ -44,9 +44,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         "wind" => FilterParams::Wind { method: photoka_algo::WindMethod::Wind, from_right: false, seed: 17 },
         "blast" => FilterParams::Wind { method: photoka_algo::WindMethod::Blast, from_right: false, seed: 17 },
         "blast-right" => FilterParams::Wind { method: photoka_algo::WindMethod::Blast, from_right: true, seed: 17 },
-        "spin" => FilterParams::SpinBlur {
-            pins: vec![photoka_algo::SpinPin { radius_x: 1.0, radius_y: 1.0, blur_angle: 30.0, angle: 17.0, ..Default::default() }],
-        },
+        "spin" => {
+            FilterParams::SpinBlur { pins: vec![photoka_algo::SpinPin { radius_x: 1.0, radius_y: 1.0, blur_angle: 30.0, angle: 17.0, ..Default::default() }] }
+        }
         "spin-default" => FilterParams::SpinBlur { pins: vec![Default::default()] },
         "lens" | "lens-ca" | "trap" | "trap-wide" | "trap-default" => FilterParams::Invert,
         _ => return Err("unknown case".into()),

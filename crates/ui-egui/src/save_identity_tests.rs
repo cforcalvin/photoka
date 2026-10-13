@@ -12,9 +12,7 @@ fn app() -> PhotokaApp {
             import: Some(Box::new(|name, bytes, max_svg_group_depth| {
                 photoka_io::import_with_svg_group_depth(name, bytes, max_svg_group_depth).map(|r| (r.document, r.warnings)).map_err(|e| e.to_string())
             })),
-            export: Some(Box::new(|doc, path, _| {
-                photoka_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
-            })),
+            export: Some(Box::new(|doc, path, _| photoka_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string()))),
             write: Some(Box::new(|_, _| Ok(()))),
             automation_write: Some(Box::new(|_, _| Ok(()))),
             ..Default::default()

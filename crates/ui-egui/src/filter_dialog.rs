@@ -1234,13 +1234,8 @@ mod tests {
 
     #[test]
     fn preview_runs_engine_command_on_proxy() {
-        let mut doc = Document::with_background(
-            "p",
-            photoka_doc::Size::new(64, 64),
-            photoka_doc::ColorMode::Rgb,
-            photoka_doc::SampleType::U8,
-            photoka_doc::Color::WHITE,
-        );
+        let mut doc =
+            Document::with_background("p", photoka_doc::Size::new(64, 64), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8, photoka_doc::Color::WHITE);
         let bg = doc.layers[0].id;
         doc.layers[0].surface_mut().unwrap().fill_rect(photoka_geom::Rect::new(0, 0, 32, 64), &[0.0, 0.0, 0.0, 1.0]);
         let out = preview_document(&doc, Some(bg), "filter.blur.gaussianBlur", &json!({"radius": 4.0}), 1).unwrap();
@@ -1377,8 +1372,7 @@ mod tests {
     fn preview_stays_inside_the_selection_at_every_proxy_factor() {
         use photoka_doc::SampleType;
         for depth in [SampleType::U8, SampleType::U16, SampleType::F32] {
-            let mut doc =
-                Document::with_background("p", photoka_doc::Size::new(64, 64), photoka_doc::ColorMode::Rgb, depth, photoka_doc::Color::gray(0.5));
+            let mut doc = Document::with_background("p", photoka_doc::Size::new(64, 64), photoka_doc::ColorMode::Rgb, depth, photoka_doc::Color::gray(0.5));
             let bg = doc.layers[0].id;
             let mut sel = photoka_raster::Surface::new(photoka_doc::PixelFormat::GRAY8);
             sel.fill_rect(photoka_geom::Rect::new(0, 0, 32, 64), &[1.0]);
@@ -1453,13 +1447,8 @@ mod tests {
 
     /// A filtered test image with structure at every scale (low-frequency waves plus a ramp).
     fn waves(n: u32) -> Document {
-        let mut doc = Document::with_background(
-            "w",
-            photoka_doc::Size::new(n, n),
-            photoka_doc::ColorMode::Rgb,
-            photoka_doc::SampleType::U8,
-            photoka_doc::Color::WHITE,
-        );
+        let mut doc =
+            Document::with_background("w", photoka_doc::Size::new(n, n), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8, photoka_doc::Color::WHITE);
         let s = doc.layers[0].surface_mut().unwrap();
         for y in 0..n as i32 {
             for x in 0..n as i32 {
@@ -1754,11 +1743,8 @@ mod tests {
     /// Every previewed command with its parameter sets.
     fn previewed_cases() -> Vec<(&'static str, String, Value)> {
         let mut app = PhotokaApp::new(photoka_engine::Session::new(), Default::default());
-        let ids: Vec<&'static str> = photoka_engine::command_specs()
-            .iter()
-            .map(|c| c.id)
-            .filter(|id| has_dialog(id) && (id.starts_with("filter.") || PREVIEWED.contains(id)))
-            .collect();
+        let ids: Vec<&'static str> =
+            photoka_engine::command_specs().iter().map(|c| c.id).filter(|id| has_dialog(id) && (id.starts_with("filter.") || PREVIEWED.contains(id))).collect();
         ids.into_iter().flat_map(|id| sweep_params(&mut app, id).into_iter().map(move |(label, p)| (id, label, p))).collect()
     }
 

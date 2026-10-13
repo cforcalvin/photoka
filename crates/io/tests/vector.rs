@@ -235,8 +235,7 @@ fn corpus_shape_coverage_matches_photoshop() {
             if sh.stroke.is_some() || !matches!(sh.fill, Some(Fill::Solid(_))) || !l.effects.items.is_empty() || sh.path.is_empty() {
                 continue;
             }
-            let r =
-                cache.content_bounds().union(&photoka_vector::fill_rasterizer(&sh.path, 0.01).pixel_bounds().unwrap_or(Rect::EMPTY)).intersect(&d.bounds());
+            let r = cache.content_bounds().union(&photoka_vector::fill_rasterizer(&sh.path, 0.01).pixel_bounds().unwrap_or(Rect::EMPTY)).intersect(&d.bounds());
             if r.is_empty() {
                 continue;
             }

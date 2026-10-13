@@ -18,8 +18,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
             bytes.extend([(x % 256) as u8, (y % 256) as u8, ((x ^ y) % 256) as u8]);
         }
     }
-    let image =
-        photoka_codecs::Image::from_raw(width as u32, height as u32, photoka_codecs::ChannelLayout::Rgb, photoka_codecs::SampleType::U8, bytes)?;
+    let image = photoka_codecs::Image::from_raw(width as u32, height as u32, photoka_codecs::ChannelLayout::Rgb, photoka_codecs::SampleType::U8, bytes)?;
     let encoded = photoka_codecs::encode(&image, photoka_codecs::Format::Png, &Default::default())?;
     app.session.open_document(photoka_io::import("scope.png", &encoded)?.document, None);
     camera_raw_ui::menu(&mut app, &ctx, "filter.cameraRaw", &json!({})).ok_or("no dialog entry point")??;

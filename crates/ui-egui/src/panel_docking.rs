@@ -858,9 +858,7 @@ impl craft_ui::docking::DockContent<String> for PanelContent<'_> {
             let members = self.app.ui.docking.as_ref().map(|layout| group_members(layout, id)).unwrap_or_default();
             target.tabs = members
                 .into_iter()
-                .filter_map(|panel| {
-                    ui.ctx().read_response(egui::Id::new("photoka-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect))
-                })
+                .filter_map(|panel| ui.ctx().read_response(egui::Id::new("photoka-panel-docking").with(("tab", &panel))).map(|response| (panel, response.rect)))
                 .collect();
         }
         if !self.collapsed.contains(id) {

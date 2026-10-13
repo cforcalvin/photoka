@@ -167,9 +167,8 @@ fn run_remove(doc: &mut Document, plan: &Plan, p: &Value, ctx: &crate::jobs::Job
         return Ok(None);
     }
     let (w, h) = (win.width() as usize, win.height() as usize);
-    let mut data = ctx
-        .stage(0.0, 1.0, label, |ctl| photoka_algo::remove::remove_with(w, h, img.ch, &img.data, &hole, SEED, ctl))
-        .map_err(|_| EngineError::Cancelled)?;
+    let mut data =
+        ctx.stage(0.0, 1.0, label, |ctl| photoka_algo::remove::remove_with(w, h, img.ch, &img.data, &hole, SEED, ctl)).map_err(|_| EngineError::Cancelled)?;
     // The fill's seam blending can step slightly past the storable range.
     clamp_samples(&fmt, &mut data);
     Ok(Some((Region { rect: win, ch: img.ch, data }, hole)))

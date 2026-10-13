@@ -421,8 +421,7 @@ mod tests {
                 let dark = preview.sample([0.0, 0.0], 1, false, &params).unwrap();
                 let light = preview.sample([1.0 / 40.0, 0.0], 1, false, &params).unwrap();
                 assert!(light[0] - dark[0] > 0.5, "native alternating pixels survive: {mode:?}/{depth:?}");
-                let mut doc =
-                    photoka_doc::Document::new("test", photoka_geom::Size::new(40, 30), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8);
+                let mut doc = photoka_doc::Document::new("test", photoka_geom::Size::new(40, 30), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::U8);
                 doc.icc_profile = Some(photoka_cms::Builtin::Srgb.profile().to_bytes());
                 let display = photoka_engine::color_cmds::ColorState::default().canvas_display(&doc).unwrap();
                 assert_eq!(crop_image(&expected, PixelRect::new(-12, 8, -10, 9), &display).size, [2, 1]);
@@ -435,8 +434,7 @@ mod tests {
     #[test]
     fn refined_crop_uses_linear_document_display_encoding() {
         let area = PixelRect::new(0, 0, 1, 1);
-        let mut source =
-            Surface::new(photoka_color::PixelFormat { mode: photoka_color::ColorMode::Rgb, sample: photoka_color::SampleType::F32, alpha: true });
+        let mut source = Surface::new(photoka_color::PixelFormat { mode: photoka_color::ColorMode::Rgb, sample: photoka_color::SampleType::F32, alpha: true });
         source.write_region(area, &[0.25, 0.25, 0.25, 1.0]);
         let mut doc = photoka_doc::Document::new("test", photoka_geom::Size::new(1, 1), photoka_doc::ColorMode::Rgb, photoka_doc::SampleType::F32);
         doc.icc_profile = Some(photoka_cms::Builtin::LinearSrgb.profile().to_bytes());

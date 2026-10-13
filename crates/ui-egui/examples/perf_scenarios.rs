@@ -62,8 +62,7 @@ fn photo_jpeg(w: u32, h: u32) -> Res<Vec<u8>> {
             }
         }
     });
-    let img =
-        photoka_codecs::Image::from_raw(w, h, photoka_codecs::ChannelLayout::Rgb, photoka_codecs::SampleType::U8, px).map_err(|e| e.to_string())?;
+    let img = photoka_codecs::Image::from_raw(w, h, photoka_codecs::ChannelLayout::Rgb, photoka_codecs::SampleType::U8, px).map_err(|e| e.to_string())?;
     photoka_codecs::encode(&img, photoka_codecs::Format::Jpeg, &Default::default()).map_err(|e| e.to_string())
 }
 

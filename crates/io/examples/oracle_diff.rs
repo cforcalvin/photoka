@@ -256,8 +256,7 @@ fn main() {
             (img, w, h)
         };
         let image =
-            photoka_codecs::Image::from_raw((w * 3) as u32, h as u32, photoka_codecs::ChannelLayout::Rgba, photoka_codecs::SampleType::U8, img)
-                .unwrap();
+            photoka_codecs::Image::from_raw((w * 3) as u32, h as u32, photoka_codecs::ChannelLayout::Rgba, photoka_codecs::SampleType::U8, img).unwrap();
         std::fs::write(&out, photoka_codecs::encode(&image, photoka_codecs::Format::Png, &Default::default()).unwrap()).unwrap();
         println!("wrote {out}");
         return;
@@ -275,10 +274,7 @@ fn main() {
         wr(format!("{out}_ps.f32"), &merged);
         let mut meta = format!("{} {}\n", doc.size.width, doc.size.height);
         for (i, l) in doc.layers.iter().enumerate() {
-            let b = photoka_compose::surface_to_buffer(
-                l.surface().unwrap_or(&photoka_raster::Surface::new(photoka_color::PixelFormat::RGBA8)),
-                doc.bounds(),
-            );
+            let b = photoka_compose::surface_to_buffer(l.surface().unwrap_or(&photoka_raster::Surface::new(photoka_color::PixelFormat::RGBA8)), doc.bounds());
             wr(format!("{out}_L{i}.f32"), &b.px);
             meta += &format!("{i} {}\n", l.name);
         }

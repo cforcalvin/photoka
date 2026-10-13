@@ -272,8 +272,7 @@ pub(crate) fn run_filter(s: &mut Session, id: &str, p: &Value) -> Result<Value> 
                 LayerContent::Raster(surf) => surf,
                 LayerContent::Smart(_) => {
                     // Non-destructive: record the filter and re-render the smart object from its source.
-                    let sf =
-                        SmartFilter { command: id.clone(), params: params.clone(), blend: photoka_color::BlendMode::Normal, opacity: 1.0, visible: true };
+                    let sf = SmartFilter { command: id.clone(), params: params.clone(), blend: photoka_color::BlendMode::Normal, opacity: 1.0, visible: true };
                     return crate::smart_cmds::add_smart_filter(doc, layer, sf, selection.as_ref()).map(|()| fp);
                 }
                 _ => return Err(EngineError::Other("not a pixel layer".into())),

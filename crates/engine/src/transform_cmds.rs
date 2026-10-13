@@ -33,8 +33,7 @@ pub fn transform_bounds(doc: &Document, layer: &Layer) -> Rect {
         LayerContent::Group(g) => g.children.iter().map(|l| transform_bounds(doc, l)).fold(Rect::EMPTY, |a, b| a.union(&b)),
         _ => layer.surface().map_or(Rect::EMPTY, photoka_compose::bounds::content_bounds),
     };
-    let content =
-        if content.is_empty() { layer.mask.as_ref().map_or(Rect::EMPTY, |m| photoka_compose::bounds::content_bounds(&m.surface)) } else { content };
+    let content = if content.is_empty() { layer.mask.as_ref().map_or(Rect::EMPTY, |m| photoka_compose::bounds::content_bounds(&m.surface)) } else { content };
     match &doc.selection {
         Some(sel) if !moves_whole(layer) => content.intersect(&sel.content_bounds()),
         _ => content,

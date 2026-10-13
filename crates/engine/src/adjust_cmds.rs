@@ -284,13 +284,8 @@ pub(crate) fn adjust_as_smart_filter(s: &mut Session, kind: &str, label: &str, p
     if let Value::Object(m) = &mut params {
         m.remove("__kind");
     }
-    let sf = photoka_doc::SmartFilter {
-        command: format!("image.adjustments.{kind}"),
-        params,
-        blend: photoka_color::BlendMode::Normal,
-        opacity: 1.0,
-        visible: true,
-    };
+    let sf =
+        photoka_doc::SmartFilter { command: format!("image.adjustments.{kind}"), params, blend: photoka_color::BlendMode::Normal, opacity: 1.0, visible: true };
     let sel = s.active().and_then(|d| d.doc.selection.clone());
     s.edit(label, |doc, _| crate::smart_cmds::add_smart_filter(doc, id, sf, sel.as_ref()))?;
     Ok(true)

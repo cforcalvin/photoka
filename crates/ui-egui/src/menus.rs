@@ -506,8 +506,7 @@ pub(crate) fn invoke_unguarded(app: &mut PhotokaApp, ctx: &egui::Context, id: &s
                     let v = &app.ui.views[i];
                     let pz = app.point_zoom();
                     let (hw, hh) = (app.last_canvas_rect.width() / 2.0 / pz / app.ui.view.display_aspect(), app.last_canvas_rect.height() / 2.0 / pz);
-                    let r =
-                        photoka_geom::Rect::new((v.center[0] - hw) as i32, (v.center[1] - hh) as i32, (v.center[0] + hw) as i32, (v.center[1] + hh) as i32);
+                    let r = photoka_geom::Rect::new((v.center[0] - hw) as i32, (v.center[1] - hh) as i32, (v.center[0] + hw) as i32, (v.center[1] + hh) as i32);
                     !clip.bounds.intersect(&r).is_empty()
                 });
             let p = match app.session.active_index() {

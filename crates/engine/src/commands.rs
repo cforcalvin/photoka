@@ -922,13 +922,7 @@ fn build() -> Vec<CommandSpec> {
             destructive_adjust(
                 s,
                 "Desaturate",
-                Adjustment::HueSaturation {
-                    hue: 0.0,
-                    saturation: -100.0,
-                    lightness: 0.0,
-                    colorize: false,
-                    ranges: photoka_doc::adjust::HueRange::defaults(),
-                },
+                Adjustment::HueSaturation { hue: 0.0, saturation: -100.0, lightness: 0.0, colorize: false, ranges: photoka_doc::adjust::HueRange::defaults() },
                 &Value::Null,
             )
         }),

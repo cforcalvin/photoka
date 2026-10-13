@@ -380,8 +380,7 @@ mod tests {
         let written: Written = Arc::default();
         let w = written.clone();
         let aco =
-            photoka_psd::aco::write(&[photoka_psd::aco::AcoSwatch { name: "Teal".into(), color: photoka_psd::aco::AcoColor::Rgb([0, 32768, 32768]) }])
-                .unwrap();
+            photoka_psd::aco::write(&[photoka_psd::aco::AcoSwatch { name: "Teal".into(), color: photoka_psd::aco::AcoColor::Rgb([0, 32768, 32768]) }]).unwrap();
         use crate::file_dialog::FileDialogAnswer;
         let answers = vec![
             Some(FileDialogAnswer::Contents("Ocean.aco".into(), aco.clone())),

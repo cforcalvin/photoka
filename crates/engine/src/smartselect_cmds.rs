@@ -298,8 +298,7 @@ fn refine_edge(s: &mut Session, p: &Value) -> Result<Value> {
         "layerMask" => {
             let id = active.ok_or_else(|| EngineError::Other("no active layer".into()))?;
             s.edit("Select and Mask", |doc, _| {
-                let surface =
-                    region.as_ref().map(matting::region_surface).unwrap_or_else(|| photoka_raster::Surface::new(photoka_color::PixelFormat::GRAY8));
+                let surface = region.as_ref().map(matting::region_surface).unwrap_or_else(|| photoka_raster::Surface::new(photoka_color::PixelFormat::GRAY8));
                 doc.layer_mut(id).ok_or(EngineError::NoLayer(id))?.mask = Some(LayerMask { surface, ..LayerMask::reveal_all() });
                 doc.selection = None;
                 Ok(())

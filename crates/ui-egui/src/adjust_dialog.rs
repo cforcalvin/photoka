@@ -423,8 +423,7 @@ mod tests {
             |pressed| egui::Event::PointerButton { pos: reset.center(), button: egui::PointerButton::Primary, pressed, modifiers: egui::Modifiers::ALT };
         input(&mut h, egui::Modifiers::ALT, &[egui::Event::PointerMoved(reset.center()), click(true), click(false)]);
         assert!(h.state().ui.dialogs.iter().any(|d| d.id == id), "Reset keeps the dialog open");
-        let defaults =
-            photoka_engine::adjust_params::to_params(&photoka_engine::adjust_params::default_for("levels", photoka_doc::ColorMode::Rgb).unwrap());
+        let defaults = photoka_engine::adjust_params::to_params(&photoka_engine::adjust_params::default_for("levels", photoka_doc::ColorMode::Rgb).unwrap());
         assert_eq!(field(&h, id, "inBlack"), defaults["inBlack"]);
         assert_eq!(field(&h, id, "gamma"), defaults["gamma"]);
     }

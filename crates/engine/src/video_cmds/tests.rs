@@ -258,8 +258,7 @@ fn tga_sequence_frames_keep_their_transparency() {
     let dir = tmpdir("tga");
     write_tga(&format!("{dir}/f01.tga"));
     write_tga(&format!("{dir}/f02.tga"));
-    let frames =
-        load_frames(&dir, photoka_color::PixelFormat::new(photoka_color::ColorMode::Rgb, photoka_color::SampleType::U8, true)).unwrap().frames;
+    let frames = load_frames(&dir, photoka_color::PixelFormat::new(photoka_color::ColorMode::Rgb, photoka_color::SampleType::U8, true)).unwrap().frames;
     assert_eq!(frames.len(), 2);
     for f in &frames {
         assert_eq!(f.pixel(2, 6), vec![1.0, 0.0, 0.0, 1.0]);

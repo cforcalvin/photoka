@@ -343,12 +343,7 @@ fn commit_open_raw(app: &mut PhotokaApp, params: &CameraRaw, raw: &RawOpen) -> R
 
 /// Swap the default-developed document `doc_id` for the re-developed one, at the same tab
 /// position and with the same path. Returns `{document, previous, warnings, wb}`.
-fn replace_raw_document(
-    s: &mut photoka_engine::Session,
-    doc_id: photoka_doc::DocId,
-    r: photoka_io::ImportResult,
-    wb: bool,
-) -> photoka_engine::Result<Value> {
+fn replace_raw_document(s: &mut photoka_engine::Session, doc_id: photoka_doc::DocId, r: photoka_io::ImportResult, wb: bool) -> photoka_engine::Result<Value> {
     let index =
         s.documents().iter().position(|st| st.doc.id == doc_id).ok_or_else(|| photoka_engine::EngineError::Other("the raw document was closed".into()))?;
     let path = s.documents().get(index).and_then(|st| st.path.clone());

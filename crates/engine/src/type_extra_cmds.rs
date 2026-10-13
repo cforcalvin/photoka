@@ -323,8 +323,7 @@ fn convert_to_shape(s: &mut Session, p: &Value) -> Result<Value> {
 fn warp_text(s: &mut Session, p: &Value) -> Result<Value> {
     let cmd = "type.warpText";
     let style = p.get("style").and_then(Value::as_str).unwrap_or("arc");
-    let psd =
-        photoka_text::warp::psd_style(style).ok_or_else(|| EngineError::BadParams { cmd: cmd.into(), msg: format!("unknown warp style \"{style}\"") })?;
+    let psd = photoka_text::warp::psd_style(style).ok_or_else(|| EngineError::BadParams { cmd: cmd.into(), msg: format!("unknown warp style \"{style}\"") })?;
     let f = |k: &str, d: f64| p.get(k).and_then(Value::as_f64).unwrap_or(d).clamp(-100.0, 100.0) as f32;
     let warp = (psd != "warpNone").then(|| TextWarp {
         style: psd.into(),

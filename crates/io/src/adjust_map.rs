@@ -689,14 +689,12 @@ pub fn write(adj: &Adjustment) -> Vec<([u8; 4], Vec<u8>)> {
             let n = *size as usize;
             let cube = lut.as_deref().zip(photoka_doc::adjust::lut3d_len(*size)).and_then(|(table, len)| table.get(..len)).filter(|_| n <= 256);
             let (file, dither) = match cube {
-                Some(cube) => (
-                    photoka_cms::lutfile::LutFile { title: String::new(), size: n, data: cube.to_vec(), domain_min: [0.0; 3], domain_max: [1.0; 3] },
-                    *dither,
-                ),
+                Some(cube) => {
+                    (photoka_cms::lutfile::LutFile { title: String::new(), size: n, data: cube.to_vec(), domain_min: [0.0; 3], domain_max: [1.0; 3] }, *dither)
+                }
                 _ => (photoka_cms::lutfile::LutFile { title: String::new(), ..photoka_cms::lutfile::LutFile::identity(2) }, false),
             };
-            let en =
-                |t: &str, val: &str| Value::Enumerated { type_id: photoka_psd::descriptor::Id::new(t), value: photoka_psd::descriptor::Id::new(val) };
+            let en = |t: &str, val: &str| Value::Enumerated { type_id: photoka_psd::descriptor::Id::new(t), value: photoka_psd::descriptor::Id::new(val) };
             let text = |t: &str| Value::Text(photoka_psd::descriptor::UnicodeString::new_nul(t));
             let d = Descriptor::new("null")
                 .with("lookupType", en("colorLookupType", "3DLUT"))

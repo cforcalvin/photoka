@@ -397,13 +397,7 @@ fn fold_made(app: &mut PhotokaApp, made: MadeLayer) {
 /// Free Transform of a targeted unlinked layer mask, alpha channel or Quick Mask by itself: the
 /// box frames its content (within the selection) and previews the moving values in grey over the
 /// document with them vacated.
-fn begin_lone(
-    app: &mut PhotokaApp,
-    ctx: &egui::Context,
-    doc: Arc<Document>,
-    surf: photoka_raster::Surface,
-    target: serde_json::Value,
-) -> Result<(), String> {
+fn begin_lone(app: &mut PhotokaApp, ctx: &egui::Context, doc: Arc<Document>, surf: photoka_raster::Surface, target: serde_json::Value) -> Result<(), String> {
     use photoka_engine::transform_cmds as tc;
     let b = tc::target_bounds(&doc, &surf);
     if b.is_empty() {

@@ -878,9 +878,7 @@ mod tests {
         let written = std::rc::Rc::new(std::cell::RefCell::new(Vec::<String>::new()));
         let log = written.clone();
         let services = crate::Services {
-            export: Some(Box::new(|doc, path, _| {
-                photoka_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string())
-            })),
+            export: Some(Box::new(|doc, path, _| photoka_io::export(doc, path, &Default::default()).map(|r| (r.bytes, r.warnings)).map_err(|e| e.to_string()))),
             write: Some(Box::new(move |path, _| {
                 log.borrow_mut().push(path.to_string());
                 Ok(())

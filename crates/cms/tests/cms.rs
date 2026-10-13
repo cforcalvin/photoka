@@ -721,9 +721,8 @@ fn gray_profile_with_reversed_lut_type_reencodes() {
 /// sRGB the way Photoshop embeds it: a v2 profile whose TRCs are 1024-entry 16-bit tables.
 fn srgb_as_v2_tables() -> Profile {
     let mut p = srgb().clone();
-    let table = |c: &photoka_cms::Curve| {
-        photoka_cms::Curve::Table((0..1024).map(|i| ((c.eval64(i as f64 / 1023.0) * 65535.0).round() / 65535.0) as f32).collect())
-    };
+    let table =
+        |c: &photoka_cms::Curve| photoka_cms::Curve::Table((0..1024).map(|i| ((c.eval64(i as f64 / 1023.0) * 65535.0).round() / 65535.0) as f32).collect());
     let trc = p.trc.clone().unwrap();
     p.trc = Some([table(&trc[0]), table(&trc[1]), table(&trc[2])]);
     p.version = (2, 0x10);

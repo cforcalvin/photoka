@@ -1469,8 +1469,7 @@ fn vector_mask_rasterize(s: &mut Session, p: &Value) -> Result<Value> {
         let vm = l.vector_mask.take().ok_or_else(|| EngineError::Other("layer has no vector mask".into()))?;
         let mut mask = l.mask.take().unwrap_or_else(|| {
             let mut m = photoka_doc::LayerMask::reveal_all();
-            m.surface =
-                photoka_raster::Surface::with_default(photoka_color::PixelFormat::new(photoka_color::ColorMode::Grayscale, depth, false), &[1.0]);
+            m.surface = photoka_raster::Surface::with_default(photoka_color::PixelFormat::new(photoka_color::ColorMode::Grayscale, depth, false), &[1.0]);
             m
         });
         if let Some(shown) = shown {

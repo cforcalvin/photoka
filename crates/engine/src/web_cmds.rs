@@ -390,12 +390,8 @@ pub fn optimize(px: &[[f32; 4]], bw: usize, rect: Rect, st: &WebSettings, icc: O
             let layout = if alpha { photoka_codecs::ChannelLayout::Rgba } else { photoka_codecs::ChannelLayout::Rgb };
             let meta = photoka_codecs::Metadata { dpi: Some((dpi, dpi)), xmp: xmp.map(str::to_string), ..Default::default() };
             let img = photoka_codecs::Image::from_u8(ww, hh, layout, data).map_err(e)?.with_icc(icc.map(<[u8]>::to_vec)).with_meta(meta);
-            let opts = photoka_codecs::EncodeOptions {
-                png_interlaced: st.interlaced,
-                embed_icc: icc.is_some(),
-                embed_metadata: xmp.is_some(),
-                ..Default::default()
-            };
+            let opts =
+                photoka_codecs::EncodeOptions { png_interlaced: st.interlaced, embed_icc: icc.is_some(), embed_metadata: xmp.is_some(), ..Default::default() };
             (photoka_codecs::encode(&img, photoka_codecs::Format::Png, &opts).map_err(e)?, None)
         }
         WebFormat::Jpeg => {

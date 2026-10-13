@@ -297,8 +297,7 @@ fn main() {
         b.time(&format!("Curves dialog change, layer preview{sel}"), |b| {
             v = (v + 7) % 120;
             let t = Instant::now();
-            let p =
-                photoka_ui_egui::adjust_preview::with_settings(&base, "curves", &json!({"points": [[0, 0], [100, 100 + v], [255, 255]]})).expect("preview");
+            let p = photoka_ui_egui::adjust_preview::with_settings(&base, "curves", &json!({"points": [[0, 0], [100, 100 + v], [255, 255]]})).expect("preview");
             let build = ms(t);
             let t = Instant::now();
             match &mut b.gpu {
@@ -320,8 +319,7 @@ fn main() {
         b.time(&format!("Curves dialog change, layer preview 100 % view{sel}"), |b| {
             v = (v + 7) % 120;
             let t = Instant::now();
-            let p =
-                photoka_ui_egui::adjust_preview::with_settings(&base, "curves", &json!({"points": [[0, 0], [100, 100 + v], [255, 255]]})).expect("preview");
+            let p = photoka_ui_egui::adjust_preview::with_settings(&base, "curves", &json!({"points": [[0, 0], [100, 100 + v], [255, 255]]})).expect("preview");
             match &mut b.gpu {
                 Some(g) => {
                     if g.comp.render(&g.device, &g.queue, &p, view, |_, _| {}).is_err() {

@@ -249,12 +249,7 @@ fn save_through(
     Ok(r.warnings)
 }
 
-fn save_file(
-    doc: &Document,
-    path: &str,
-    settings: &photoka_ui_egui::ExportSettings,
-    ctl: &photoka_ui_egui::jobs_ui::SaveCtl,
-) -> Result<Vec<String>, String> {
+fn save_file(doc: &Document, path: &str, settings: &photoka_ui_egui::ExportSettings, ctl: &photoka_ui_egui::jobs_ui::SaveCtl) -> Result<Vec<String>, String> {
     save_through(doc, path, settings, ctl, |p, b, progress| write_atomic_progress(Path::new(p), b, progress))
 }
 
@@ -653,7 +648,7 @@ mod tests {
         // The extension each save above should suggest, in order.
         let want = [
             "psd",                       // Save As untitled
-            "photoka jpeg gif bmp psd",   // Save As opened .photoka .jpeg .gif .bmp .dng
+            "photoka jpeg gif bmp psd",  // Save As opened .photoka .jpeg .gif .bmp .dng
             "psd",                       // Save a Copy
             "png jpg webp tif tga",      // Export As
             "png jpg gif webp",          // Quick Export

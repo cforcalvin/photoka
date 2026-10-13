@@ -20,10 +20,7 @@ fn main() {
         for y in 0..h {
             for x in 0..w {
                 let n = ((x.wrapping_mul(73_856_093) ^ y.wrapping_mul(19_349_663)) as u32 % 1000) as f32 / 1000.0 * 0.06;
-                data.extend(photoka_raster::from_rgba(
-                    &fmt,
-                    [x as f32 / w as f32 + n, 0.5 + ((x + y) as f32 * 0.002).sin() * 0.3, y as f32 / h as f32, 1.0],
-                ));
+                data.extend(photoka_raster::from_rgba(&fmt, [x as f32 / w as f32 + n, 0.5 + ((x + y) as f32 * 0.002).sin() * 0.3, y as f32 / h as f32, 1.0]));
             }
         }
         surf.write_region(Rect::new(0, 0, w, h), &data);

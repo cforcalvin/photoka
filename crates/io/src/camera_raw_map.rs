@@ -297,11 +297,7 @@ pub(super) fn export_item(params: &J) -> Result<Descriptor, String> {
         if get_param(&original, param) != Some(value) {
             write_number(&mut d, key, value)?;
             if matches!(*key, "Temp" | "Tint") {
-                set(
-                    &mut d,
-                    "WBal",
-                    Value::Enumerated { type_id: photoka_psd::descriptor::Id::new("WBal"), value: photoka_psd::descriptor::Id::new("Cst ") },
-                );
+                set(&mut d, "WBal", Value::Enumerated { type_id: photoka_psd::descriptor::Id::new("WBal"), value: photoka_psd::descriptor::Id::new("Cst ") });
             }
         }
     }

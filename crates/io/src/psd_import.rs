@@ -438,11 +438,7 @@ impl Ctx<'_> {
                     // The recursion here (and in every later consumer of the tree) is bounded by
                     // the document model's nesting cap; a deeper subtree is not imported.
                     let children = if depth >= photoka_doc::MAX_GROUP_DEPTH {
-                        self.warn(format!(
-                            "group `{}` nests deeper than {} groups; its contents were not imported",
-                            rec.name(),
-                            photoka_doc::MAX_GROUP_DEPTH
-                        ));
+                        self.warn(format!("group `{}` nests deeper than {} groups; its contents were not imported", rec.name(), photoka_doc::MAX_GROUP_DEPTH));
                         Vec::new()
                     } else {
                         self.build(children, depth + 1)
