@@ -279,6 +279,8 @@ pub fn authorize_engine_command(id: &str, params: &Value) -> Result<(), Automati
                 | "layer.videoLayers.newVideoLayerFromFile"
                 | "layer.videoLayers.replaceFootage"
                 | "layer.videoLayers.reloadFrame"
+                | "ai.models.import"
+                | "ai.models.setFolder"
         )
         || command_uses_ambient_path(id, params)
         || profile_command_may_read_ambient(id, params)
@@ -762,6 +764,8 @@ mod tests {
             ("plugin.install", serde_json::json!({"path": " "})),
             ("swatches.import", serde_json::json!({"path": "/outside/set.aco"})),
             ("swatches.export", serde_json::json!({"path": "/outside/set.ase"})),
+            ("ai.models.import", serde_json::json!({"path": "/outside/model.safetensors"})),
+            ("ai.models.setFolder", serde_json::json!({"path": "/outside/models"})),
         ] {
             assert!(authorize_engine_command(id, &params).is_err(), "{id}: {params}");
         }
@@ -825,7 +829,8 @@ mod tests {
     }
 
     fn documents_filesystem_path_params(id: &str, params: &str) -> bool {
-        if matches!(id, "prefs.get" | "prefs.reset") {
+        // Paths only in their results; they take no path parameter.
+        if matches!(id, "prefs.get" | "prefs.reset" | "ai.models.list" | "ai.comfy.status") {
             return false;
         }
         // These registry descriptions refer to document vector paths, not host files.
