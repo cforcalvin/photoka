@@ -3213,3 +3213,78 @@ curves	Smooth	매끄럽게
 	Remove after each stroke	획마다 제거
 	Apply the removal ({key})	제거 적용 ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	제거할 획: {n} (Enter 적용, Esc 취소)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	AI 생성에는 Apple 실리콘 Mac(M1 이상)이 필요합니다.
+	Accept and Download	동의 후 다운로드
+	Accept and Install	동의 후 설치
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	LCM LoRA를 추가하고 6단계, CFG 1.5, LCM 샘플러로 전환합니다
+	Built-in	내장
+	Change…	변경…
+	Checkpoint	체크포인트
+	Choose a model	모델 선택
+	Choose a model file on this Mac	이 Mac에서 모델 파일 선택
+	Civitai API key	Civitai API 키
+	Clear Mask	마스크 지우기
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI는 GPL-3.0 라이선스의 오픈 소스 소프트웨어입니다. Photoka는 Python 및 PyTorch(약 4GB)와 함께 내려받아 이 Mac에서 별도 프로그램으로 실행하며, 어떤 데이터도 컴퓨터 밖으로 나가지 않습니다.
+	ComfyUI isn't installed.	ComfyUI가 설치되어 있지 않습니다.
+	ComfyUI {version} is installed	ComfyUI {version} 설치됨
+	ComfyUI {version} is running on port {port}	ComfyUI {version} 실행 중(포트 {port})
+	Delete ComfyUI, its Python and PyTorch (your models stay)	ComfyUI와 해당 Python 및 PyTorch를 삭제합니다(모델은 유지됨)
+	Describe the image…	이미지를 설명하세요…
+	Download	다운로드
+	Drop .safetensors files here	.safetensors 파일을 여기에 놓으세요
+	Embedding	임베딩
+	Engine	엔진
+	Erase the mask	마스크 지우개
+	Fast (LCM)	빠르게(LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	빠른 모드에는 LCM LoRA가 필요합니다. 모델 관리자 › 추천에서 내려받으세요.
+	Generate Frame Tool	생성 프레임 도구
+	Generate in Frame…	프레임에 생성…
+	Generate…	생성…
+	Guidance (CFG)	가이던스(CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	프레임 픽셀을 얼마나 바꿀지 정합니다. 100%는 원본을 무시하고, 낮을수록 원본을 더 많이 유지합니다.
+	Install ComfyUI…	ComfyUI 설치…
+	Installed	설치됨
+	Invert Mask	마스크 반전
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	로드됨, 준비 완료
+	Log:	로그:
+	Mask Frame	프레임 마스크
+	Model Manager	모델 관리자
+	Model Manager…	모델 관리자…
+	Models folder	모델 폴더
+	Move and resize the frame	프레임 이동 및 크기 조절
+	Needs a Civitai key	Civitai 키 필요
+	Negative prompt	네거티브 프롬프트
+	New seed for every image	이미지마다 새 시드
+	No LoRAs installed.	설치된 LoRA가 없습니다.
+	No models installed yet.	아직 설치된 모델이 없습니다.
+	No models yet. Download one from Suggested, or import your own.	아직 모델이 없습니다. 추천에서 내려받거나 직접 가져오세요.
+	Open or create a document to generate into it.	생성하려면 문서를 열거나 만드세요.
+	Optional, for Civitai downloads	선택 사항, Civitai 다운로드용
+	Paint what to regenerate	다시 생성할 영역을 칠하세요
+	Prompt	프롬프트
+	Read the license	라이선스 읽기
+	Regenerate the whole frame	프레임 전체 다시 생성
+	Reset Frame	프레임 재설정
+	Resume	다시 시작
+	SD 1.5 Inpainting	SD 1.5 인페인팅
+ai	Sampler	샘플러
+	Saved in the Keychain	키체인에 저장됨
+	Start	시작
+	Steps	단계
+	Stop	중지
+	Suggested	추천
+	Support files	지원 파일
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	내장 엔진에는 Apple 실리콘 Mac(M1 이상)이 필요합니다. 대신 ComfyUI를 사용하세요.
+	The managed ComfyUI needs a Mac with Apple silicon.	관리형 ComfyUI에는 Apple 실리콘 Mac이 필요합니다.
+	Tokenizer	토크나이저
+	VAE	VAE
+	What to avoid…	피할 요소…
+	or click to choose a file	또는 클릭하여 파일 선택
+	{name} is licensed under {license}. Read the license before you download it.	{name}은(는) {license} 라이선스를 따릅니다. 내려받기 전에 라이선스를 읽어 주세요.
+	{used} used, {free} free	{used} 사용, {free} 여유
+	· inpainting the masked area	· 마스크 영역 인페인팅
+	· whole frame	· 프레임 전체

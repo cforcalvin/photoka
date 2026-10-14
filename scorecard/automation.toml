@@ -56,9 +56,9 @@ note = "runtime.rs:15 ABI_VERSION = 1; manifest.rs:18 Kind::Filter only"
 [[item]]
 id = "AUTO-219-7"
 target = "Local ONNX models behind a flag, managed in Preferences; subject select, background removal"
-status = "missing"
+status = "partial"
 issue = 219
-note = "No ONNX runtime dependency"
+note = "crates/ml: local candle/Metal runtime and Model Manager (ai.models.*) for image generation and inpainting (docs/ai-generation.md); no ONNX, subject select or background removal yet"
 
 [[item]]
 id = "AUTO-219-8"

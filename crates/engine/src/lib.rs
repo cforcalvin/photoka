@@ -10,6 +10,9 @@
 pub mod actions_cmds;
 pub mod adjust_cmds;
 pub mod adjust_params;
+pub mod ai_cmds;
+pub mod ai_comfy_cmds;
+pub mod ai_gen_cmds;
 pub mod align_cmds;
 mod allocation;
 pub mod analysis_cmds;
@@ -407,6 +410,8 @@ pub struct Session {
     /// A finished live stroke offered to the `paint.stroke` / `paint.pencil` that commits it
     /// ([`Session::offer_live_stroke`]).
     pub(crate) live_commit: Option<brush_cmds::LiveCommit>,
+    /// Offline image generation: models folder, frames and masks, engines (see `ai_cmds`).
+    pub ai: ai_cmds::AiState,
 }
 
 /// Move item `i` of `v` to position `to`, clamped to the end. Returns where it went; `None` when

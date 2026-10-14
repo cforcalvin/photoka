@@ -1,6 +1,6 @@
 # Where Photoka falls short of Photoshop
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-11 · **Change:** minor (G8: Character panel OpenType buttons landed, TYPE-218-5 stays partial; G8: triple-, quadruple- and five-click type selection landed, TYPE-218-8 done; Czech UI localization evidence added to G13; G14: D5100 crop and Camera Raw tuning validation) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-13 · **Change:** minor (G15: offline AI generation landed: frame, inpainting, SD 1.5/Turbo/LCM, LoRAs, native and ComfyUI engines, Model Manager) · **Target:** Adobe Photoshop 2026
 
 Every known shortfall against Photoshop 2026 (27.11.0), one entry each, ranked by user impact
 on the way to beta. This is the work list agents pick from: take the highest-ranked entry that
@@ -33,7 +33,7 @@ what an agent can't finish alone.
 | G12 | Pen tablets and display hardware | hardware | medium | 80–150 h | [hardware-parity](hardware-parity.md) |
 | G13 | Languages: Hindi, Arabic, Vietnamese, RTL, engine messages | localization | medium | 80–140 h + human | [localization-parity](localization-parity.md) |
 | G14 | Camera Raw depth | features, formats | medium | 120–200 h | [file-format-parity](file-format-parity.md#camera-raw) |
-| G15 | AI and generative features | AI | medium (high for some users) | 300–600 h + human | [target-app-parity](target-app-parity.md) |
+| G15 | AI and generative features (offline generation landed) | AI | medium (high for some users) | 220–500 h + human | [ai-generation](ai-generation.md) |
 | G16 | Plug-in compatibility (.8BF, UXP) | ecosystem | medium | 250–450 h + human | [target-app-parity](target-app-parity.md) |
 | G17 | Platforms and distribution | platforms | low-medium | 30–60 h + human | [scorecard](scorecard.md#distribution) |
 
@@ -106,12 +106,21 @@ what an agent can't finish alone.
 - **Estimate:** 120–200 h.
 
 ### G15. AI and generative features
-- **Missing:** Generative Fill and Expand, Generative Upscale, Neural Filters, Sky Replacement,
-  Super Zoom, ML Select Subject/Sky. There is no ML runtime (AUTO-219-7). Classical substitutes
-  exist (GrabCut/max-flow selection, Remove tool by non-local patch completion).
+- **Done (2026-10-13):** offline image generation on Apple silicon ([ai-generation](ai-generation.md)):
+  a Generate Frame tool with a mask brush, text to image, image to image and inpainting with
+  SD 1.5 (base and inpainting), SD-Turbo and LCM, stacked LoRAs, a built-in candle/Metal engine
+  and an optional Photoka-managed ComfyUI, and a Model Manager with a bundled click-to-download
+  catalog. This is the local ML runtime the owner decision (#41) asked for: openly licensed
+  models, local only, nothing downloaded by default.
+- **Missing:** Photoshop's Generative Fill and Expand UI over a selection (the frame engine can
+  back it), Generative Upscale, Neural Filters, Sky Replacement, Super Zoom, ML Select
+  Subject/Sky, SDXL/Flux, ControlNet. Classical substitutes exist (GrabCut/max-flow selection,
+  Remove tool by non-local patch completion).
 - **Evidence:** Photoshop's `Required/UXP` ships the Neural Filters gallery and its `.kys` has
-  a Neural Filters taskspace; users ask for local models (#2313, #1996, #2682).
-- **Estimate:** 300–600 h. **Human:** owner decision #41 (model licences, local vs remote).
+  a Neural Filters taskspace; users ask for local models (#2313, #1996, #2682). Photoka:
+  `crates/ml`, `ai.*` commands, ignored end-to-end tests that ran SD 1.5, SD-Turbo, LCM-LoRA and
+  ComfyUI on real models.
+- **Estimate:** 220–500 h. **Human:** which further models to bundle in the catalog (licences).
 
 ### G16. Plug-in compatibility
 - **Missing:** hosting Photoshop .8BF filters (#2647), UXP panels, CEP. Photoka has its own
@@ -225,6 +234,7 @@ what an agent can't finish alone.
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-13 | minor | G15: offline AI generation (Generate Frame, inpainting, LoRAs, native and ComfyUI engines, Model Manager); estimate 300–600 → 220–500 h |
 | 2026-10-11 | minor | D5100 image area and Camera Raw tuning validation; G14 remains open |
 | 2026-10-11 | minor | G13: Czech dynamic UI text localized; engine messages and native review remain open |
 | 2026-10-11 | minor | G8: triple/quadruple/five-click type selection done (TYPE-218-8, #3493); Type evidence recounted |

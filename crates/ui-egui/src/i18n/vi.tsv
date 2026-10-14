@@ -3528,3 +3528,76 @@ curves	Smooth	Làm mượt
 	Remove after each stroke	Xóa sau mỗi nét vẽ
 	Apply the removal ({key})	Áp dụng việc xóa ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Nét vẽ cần xóa: {n} (Enter áp dụng, Esc hủy)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Tạo ảnh bằng AI cần máy Mac dùng Apple silicon (M1 trở lên).
+	Accept and Download	Chấp nhận và tải xuống
+	Accept and Install	Chấp nhận và cài đặt
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Thêm LoRA LCM và chuyển sang 6 bước, CFG 1,5 và bộ lấy mẫu LCM
+	Built-in	Tích hợp
+	Change…	Thay đổi…
+	Checkpoint	Checkpoint
+	Choose a model	Chọn mô hình
+	Choose a model file on this Mac	Chọn tệp mô hình trên máy Mac này
+	Civitai API key	Khóa API Civitai
+	Clear Mask	Xóa mặt nạ
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI là phần mềm mã nguồn mở theo giấy phép GPL-3.0. Photoka tải nó xuống cùng Python và PyTorch (khoảng 4 GB) và chạy nó như một chương trình riêng trên máy Mac này; không có gì rời khỏi máy tính của bạn.
+	ComfyUI isn't installed.	ComfyUI chưa được cài đặt.
+	ComfyUI {version} is installed	ComfyUI {version} đã được cài đặt
+	ComfyUI {version} is running on port {port}	ComfyUI {version} đang chạy trên cổng {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Xóa ComfyUI cùng Python và PyTorch của nó (các mô hình vẫn được giữ)
+	Describe the image…	Mô tả hình ảnh…
+	Download	Tải xuống
+	Drop .safetensors files here	Thả tệp .safetensors vào đây
+	Embedding	Embedding
+	Engine	Bộ máy
+	Erase the mask	Tẩy mặt nạ
+	Fast (LCM)	Nhanh (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Chế độ nhanh cần LoRA LCM: hãy tải xuống từ Trình quản lý mô hình › Đề xuất.
+	Generate Frame Tool	Công cụ Khung tạo ảnh
+	Generate in Frame…	Tạo trong khung…
+	Generate…	Tạo…
+	Guidance (CFG)	Mức bám prompt (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Thay bao nhiêu điểm ảnh của khung: 100% bỏ qua chúng; thấp hơn giữ lại nhiều ảnh gốc hơn.
+	Install ComfyUI…	Cài đặt ComfyUI…
+	Installed	Đã cài đặt
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Đã nạp và sẵn sàng
+	Log:	Nhật ký:
+	Mask Frame	Phủ mặt nạ khung
+	Model Manager	Trình quản lý mô hình
+	Model Manager…	Trình quản lý mô hình…
+	Models folder	Thư mục mô hình
+	Move and resize the frame	Di chuyển và đổi kích thước khung
+	Needs a Civitai key	Cần khóa Civitai
+	Negative prompt	Prompt loại trừ
+	New seed for every image	Hạt giống mới cho mỗi ảnh
+	No LoRAs installed.	Chưa cài LoRA nào.
+	No models installed yet.	Chưa cài mô hình nào.
+	No models yet. Download one from Suggested, or import your own.	Chưa có mô hình. Hãy tải một mô hình trong Đề xuất hoặc nhập mô hình của bạn.
+	Open or create a document to generate into it.	Hãy mở hoặc tạo tài liệu để tạo ảnh vào đó.
+	Optional, for Civitai downloads	Không bắt buộc, dùng cho tải xuống từ Civitai
+	Paint what to regenerate	Tô vùng cần tạo lại
+	Prompt	Prompt
+	Read the license	Đọc giấy phép
+	Regenerate the whole frame	Tạo lại toàn bộ khung
+	Reset Frame	Đặt lại khung
+	Resume	Tiếp tục
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Bộ lấy mẫu
+	Saved in the Keychain	Đã lưu trong Chuỗi khóa
+	Start	Bắt đầu
+	Steps	Số bước
+	Suggested	Đề xuất
+	Support files	Tệp hỗ trợ
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Bộ máy tích hợp cần máy Mac dùng Apple silicon (M1 trở lên); hãy dùng ComfyUI thay thế.
+	The managed ComfyUI needs a Mac with Apple silicon.	ComfyUI được quản lý cần máy Mac dùng Apple silicon.
+	Tokenizer	Bộ tách token
+	VAE	VAE
+	What to avoid…	Điều cần tránh…
+	or click to choose a file	hoặc bấm để chọn tệp
+	{name} is licensed under {license}. Read the license before you download it.	{name} được cấp phép theo {license}. Hãy đọc giấy phép trước khi tải xuống.
+	{used} used, {free} free	Đã dùng {used}, còn trống {free}
+	· inpainting the masked area	· tô lại vùng có mặt nạ
+	· whole frame	· toàn khung

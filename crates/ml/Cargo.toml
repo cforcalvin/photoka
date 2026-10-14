@@ -1,0 +1,35 @@
+[package]
+name = "photoka-ml"
+version.workspace = true
+edition.workspace = true
+license.workspace = true
+description = "Photoka's offline image generation: model catalog and store, downloads, the native Stable Diffusion engine and the managed ComfyUI backend"
+
+[lints]
+workspace = true
+
+[dependencies]
+photoka-codecs = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+thiserror = { workspace = true }
+log = { workspace = true }
+toml = "1"
+sha2 = "0.10"
+ureq = { version = "3", default-features = false, features = ["rustls"] }
+tar = "0.4"
+flate2 = { workspace = true }
+tungstenite = "0.30"
+
+# Keychain storage for the Civitai API key.
+[target.'cfg(target_os = "macos")'.dependencies]
+security-framework = "3"
+
+# The native engine runs on Apple silicon (Metal). Elsewhere it reports "unsupported".
+[target.'cfg(all(target_os = "macos", target_arch = "aarch64"))'.dependencies]
+candle-core = { version = "0.11", features = ["metal"] }
+candle-nn = { version = "0.11", features = ["metal"] }
+candle-transformers = { version = "0.11", features = ["metal"] }
+tokenizers = { version = "0.22", default-features = false, features = ["onig"] }
+
+[dev-dependencies]

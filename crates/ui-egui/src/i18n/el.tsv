@@ -3741,3 +3741,74 @@ curves	Smooth	Εξομάλυνση
 	Remove after each stroke	Αφαίρεση μετά από κάθε πινελιά
 	Apply the removal ({key})	Εφαρμογή της αφαίρεσης ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Πινελιές προς αφαίρεση: {n} (Enter εφαρμόζει, Esc ακυρώνει)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Η δημιουργία με AI απαιτεί Mac με Apple silicon (M1 ή νεότερο).
+	Accept and Download	Αποδοχή και λήψη
+	Accept and Install	Αποδοχή και εγκατάσταση
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Προσθήκη του LCM LoRA και μετάβαση σε 6 βήματα, CFG 1,5 και δειγματολήπτη LCM
+	Built-in	Ενσωματωμένη
+	Checkpoint	Checkpoint
+	Choose a model	Επιλέξτε μοντέλο
+	Choose a model file on this Mac	Επιλογή αρχείου μοντέλου σε αυτό το Mac
+	Civitai API key	Κλειδί API Civitai
+	Clear Mask	Απαλοιφή μάσκας
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	Το ComfyUI είναι λογισμικό ανοιχτού κώδικα με άδεια GPL-3.0. Το Photoka το κατεβάζει μαζί με Python και PyTorch (περίπου 4 GB) και το εκτελεί ως ξεχωριστό πρόγραμμα σε αυτό το Mac· τίποτα δεν φεύγει από τον υπολογιστή σας.
+	ComfyUI isn't installed.	Το ComfyUI δεν είναι εγκατεστημένο.
+	ComfyUI {version} is installed	Το ComfyUI {version} είναι εγκατεστημένο
+	ComfyUI {version} is running on port {port}	Το ComfyUI {version} εκτελείται στη θύρα {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Διαγραφή του ComfyUI, της Python και του PyTorch του (τα μοντέλα σας παραμένουν)
+	Describe the image…	Περιγράψτε την εικόνα…
+	Download	Λήψη
+	Drop .safetensors files here	Αποθέστε εδώ αρχεία .safetensors
+	Embedding	Embedding
+	Engine	Μηχανή
+	Erase the mask	Σβήσιμο της μάσκας
+	Fast (LCM)	Γρήγορα (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Η γρήγορη λειτουργία χρειάζεται το LCM LoRA: κατεβάστε το από Διαχείριση μοντέλων › Προτεινόμενα.
+	Generate Frame Tool	Εργαλείο πλαισίου δημιουργίας
+	Generate in Frame…	Δημιουργία στο πλαίσιο…
+	Generate…	Δημιουργία…
+	Guidance (CFG)	Καθοδήγηση (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Πόσα από τα εικονοστοιχεία του πλαισίου αντικαθίστανται: το 100% τα αγνοεί· χαμηλότερη τιμή κρατά περισσότερο από το πρωτότυπο.
+	Install ComfyUI…	Εγκατάσταση ComfyUI…
+	Installed	Εγκατεστημένα
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Φορτώθηκε και είναι έτοιμο
+	Log:	Αρχείο καταγραφής:
+	Mask Frame	Μάσκα πλαισίου
+	Model Manager	Διαχείριση μοντέλων
+	Model Manager…	Διαχείριση μοντέλων…
+	Models folder	Φάκελος μοντέλων
+	Move and resize the frame	Μετακίνηση και αλλαγή μεγέθους πλαισίου
+	Needs a Civitai key	Απαιτεί κλειδί Civitai
+	Negative prompt	Αρνητική προτροπή
+	New seed for every image	Νέα αρχική τιμή για κάθε εικόνα
+	No LoRAs installed.	Δεν υπάρχουν εγκατεστημένα LoRA.
+	No models installed yet.	Δεν έχουν εγκατασταθεί ακόμη μοντέλα.
+	No models yet. Download one from Suggested, or import your own.	Δεν υπάρχουν ακόμη μοντέλα. Κατεβάστε ένα από τα Προτεινόμενα ή εισαγάγετε το δικό σας.
+	Open or create a document to generate into it.	Ανοίξτε ή δημιουργήστε ένα έγγραφο για να δημιουργήσετε μέσα σε αυτό.
+	Optional, for Civitai downloads	Προαιρετικό, για λήψεις από το Civitai
+	Paint what to regenerate	Βάψτε ό,τι θα αναδημιουργηθεί
+	Prompt	Προτροπή
+	Read the license	Ανάγνωση της άδειας
+	Regenerate the whole frame	Αναδημιουργία ολόκληρου του πλαισίου
+	Reset Frame	Επαναφορά πλαισίου
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Δειγματολήπτης
+	Saved in the Keychain	Αποθηκεύτηκε στην Κλειδοθήκη
+	Start	Έναρξη
+	Steps	Βήματα
+	Suggested	Προτεινόμενα
+	Support files	Βοηθητικά αρχεία
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Η ενσωματωμένη μηχανή απαιτεί Mac με Apple silicon (M1 ή νεότερο)· χρησιμοποιήστε το ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	Το διαχειριζόμενο ComfyUI απαιτεί Mac με Apple silicon.
+	Tokenizer	Tokenizer
+	VAE	VAE
+	What to avoid…	Τι να αποφευχθεί…
+	or click to choose a file	ή κάντε κλικ για να επιλέξετε αρχείο
+	{name} is licensed under {license}. Read the license before you download it.	Το {name} διατίθεται με άδεια {license}. Διαβάστε την άδεια πριν το κατεβάσετε.
+	{used} used, {free} free	{used} σε χρήση, {free} ελεύθερα
+	· inpainting the masked area	· αναδημιουργία της περιοχής με μάσκα
+	· whole frame	· ολόκληρο το πλαίσιο

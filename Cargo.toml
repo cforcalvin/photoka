@@ -31,6 +31,7 @@ photoka-vector = { path = "crates/vector" }
 photoka-format = { path = "crates/format" }
 photoka-automation = { path = "crates/automation" }
 photoka-plugins = { path = "crates/plugins" }
+photoka-ml = { path = "crates/ml" }
 photoka-engine = { path = "crates/engine" }
 photoka-ui-egui = { path = "crates/ui-egui" }
 photoka-testkit = { path = "crates/testkit" }

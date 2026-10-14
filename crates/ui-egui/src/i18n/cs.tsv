@@ -3657,3 +3657,75 @@ navigator	Zoom	Zvětšení
 	Remove after each stroke	Odstranit po každém tahu
 	Apply the removal ({key})	Použít odstranění ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Tahy k odstranění: {n} (Enter použije, Esc zruší)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Generování pomocí AI vyžaduje Mac s čipem Apple (M1 nebo novějším).
+	Accept and Download	Přijmout a stáhnout
+	Accept and Install	Přijmout a nainstalovat
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Přidat LCM LoRA a přepnout na 6 kroků, CFG 1,5 a vzorkovač LCM
+	Built-in	Vestavěný
+	Change…	Změnit…
+	Checkpoint	Checkpoint
+	Choose a model	Vyberte model
+	Choose a model file on this Mac	Vybrat soubor modelu v tomto Macu
+	Civitai API key	Klíč API Civitai
+	Clear Mask	Vymazat masku
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI je open-source software pod licencí GPL-3.0. Photoka jej stáhne spolu s Pythonem a PyTorch (asi 4 GB) a spouští jej jako samostatný program na tomto Macu; nic neopustí váš počítač.
+	ComfyUI isn't installed.	ComfyUI není nainstalováno.
+	ComfyUI {version} is installed	ComfyUI {version} je nainstalováno
+	ComfyUI {version} is running on port {port}	ComfyUI {version} běží na portu {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Smazat ComfyUI, jeho Python a PyTorch (vaše modely zůstanou)
+	Describe the image…	Popište obrázek…
+	Download	Stáhnout
+	Drop .safetensors files here	Sem přetáhněte soubory .safetensors
+	Embedding	Embedding
+	Engine	Engine
+	Erase the mask	Gumovat masku
+	Fast (LCM)	Rychle (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Rychlý režim potřebuje LCM LoRA: stáhněte ji ve Správci modelů › Doporučené.
+	Generate Frame Tool	Nástroj Rám generování
+	Generate in Frame…	Generovat v rámu…
+	Generate…	Generovat…
+	Guidance (CFG)	Vedení (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Kolik pixelů rámu nahradit: 100 % je ignoruje; nižší hodnota zachová víc z originálu.
+	Install ComfyUI…	Nainstalovat ComfyUI…
+	Installed	Nainstalované
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Načteno a připraveno
+	Log:	Protokol:
+	Mask Frame	Maskovat rám
+	Model Manager	Správce modelů
+	Model Manager…	Správce modelů…
+	Models folder	Složka modelů
+	Move and resize the frame	Přesunout a změnit velikost rámu
+	Needs a Civitai key	Vyžaduje klíč Civitai
+	Negative prompt	Negativní prompt
+	New seed for every image	Nové semínko pro každý obrázek
+	No LoRAs installed.	Nejsou nainstalovány žádné LoRA.
+	No models installed yet.	Zatím nejsou nainstalovány žádné modely.
+	No models yet. Download one from Suggested, or import your own.	Zatím žádné modely. Stáhněte některý z Doporučených, nebo importujte vlastní.
+	Open or create a document to generate into it.	Chcete-li do dokumentu generovat, otevřete nebo vytvořte dokument.
+	Optional, for Civitai downloads	Volitelné, pro stahování z Civitai
+	Paint what to regenerate	Namalujte, co se má přegenerovat
+	Prompt	Prompt
+	Read the license	Přečíst licenci
+	Regenerate the whole frame	Přegenerovat celý rám
+	Reset Frame	Obnovit rám
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Vzorkovač
+	Saved in the Keychain	Uloženo v Klíčence
+	Start	Spustit
+	Steps	Kroky
+	Suggested	Doporučené
+	Support files	Podpůrné soubory
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Vestavěný engine vyžaduje Mac s čipem Apple (M1 nebo novějším); použijte místo něj ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	Spravované ComfyUI vyžaduje Mac s čipem Apple.
+	Tokenizer	Tokenizér
+	VAE	VAE
+	What to avoid…	Čemu se vyhnout…
+	or click to choose a file	nebo klepnutím vyberte soubor
+	{name} is licensed under {license}. Read the license before you download it.	{name} je licencováno pod {license}. Před stažením si licenci přečtěte.
+	{used} used, {free} free	{used} použito, {free} volno
+	· inpainting the masked area	· přemalování maskované oblasti
+	· whole frame	· celý rám

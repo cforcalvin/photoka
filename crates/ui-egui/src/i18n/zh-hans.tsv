@@ -2649,3 +2649,81 @@ curves	Smooth	平滑
 	Remove after each stroke	每次描边后移除
 	Apply the removal ({key})	应用移除 ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	待移除的描边：{n}（Enter 应用，Esc 取消）
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	AI 生成需要搭载 Apple 芯片（M1 或更新）的 Mac。
+	Accept and Download	接受并下载
+	Accept and Install	接受并安装
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	添加 LCM LoRA，并切换到 6 步、CFG 1.5 和 LCM 采样器
+	Built-in	内置
+	Change…	更改…
+	Checkpoint	检查点
+	Choose a model	选择模型
+	Choose a model file on this Mac	在此 Mac 上选择模型文件
+	Civitai API key	Civitai API 密钥
+	Clear Mask	清除蒙版
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI 是采用 GPL-3.0 许可证的开源软件。Photoka 会连同 Python 和 PyTorch（约 4 GB）一起下载，并在此 Mac 上作为独立程序运行；任何数据都不会离开你的电脑。
+	ComfyUI isn't installed.	尚未安装 ComfyUI。
+	ComfyUI {version} is installed	已安装 ComfyUI {version}
+	ComfyUI {version} is running on port {port}	ComfyUI {version} 正在端口 {port} 上运行
+	Delete ComfyUI, its Python and PyTorch (your models stay)	删除 ComfyUI 及其 Python 和 PyTorch（模型会保留）
+	Describe the image…	描述图像…
+	Download	下载
+	Drop .safetensors files here	将 .safetensors 文件拖放到此处
+	Embedding	嵌入
+	Engine	引擎
+	Erase the mask	擦除蒙版
+	Fast (LCM)	快速（LCM）
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	快速模式需要 LCM LoRA：请从“模型管理器 › 推荐”下载。
+	Frame	框架
+	Generate Frame Tool	生成框工具
+	Generate in Frame…	在框中生成…
+	Generate…	生成…
+	Guidance (CFG)	引导（CFG）
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	替换框内多少像素：100% 忽略原像素；数值越低保留的原图越多。
+	Install ComfyUI…	安装 ComfyUI…
+	Installed	已安装
+	Invert Mask	反相蒙版
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	已加载，就绪
+	Log:	日志：
+	Mask Frame	蒙版整个框
+	Model Manager	模型管理器
+	Model Manager…	模型管理器…
+	Models folder	模型文件夹
+	Move and resize the frame	移动框并调整其大小
+	Needs a Civitai key	需要 Civitai 密钥
+	Negative prompt	反向提示词
+	New seed for every image	每张图像使用新种子
+	No LoRAs installed.	未安装 LoRA。
+	No models installed yet.	尚未安装模型。
+	No models yet. Download one from Suggested, or import your own.	还没有模型。请从“推荐”下载，或导入你自己的模型。
+	Open or create a document to generate into it.	打开或新建文档以在其中生成。
+	Optional, for Civitai downloads	可选，用于 Civitai 下载
+	Paint what to regenerate	涂抹要重新生成的区域
+	Prompt	提示词
+	Read the license	阅读许可证
+	Regenerate the whole frame	重新生成整个框
+	Reset Frame	重置框
+	Resume	继续
+	SD 1.5 Inpainting	SD 1.5 局部重绘
+ai	Sampler	采样器
+	Saved in the Keychain	已存储在钥匙串中
+	Seed	种子
+	Start	启动
+	Steps	步数
+	Stop	停止
+	Strength	强度
+	Suggested	推荐
+	Support files	支持文件
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	内置引擎需要搭载 Apple 芯片（M1 或更新）的 Mac；请改用 ComfyUI。
+	The managed ComfyUI needs a Mac with Apple silicon.	托管的 ComfyUI 需要搭载 Apple 芯片的 Mac。
+	Tokenizer	分词器
+	VAE	VAE
+	What to avoid…	要避免的内容…
+	or click to choose a file	或点按以选择文件
+	{name} is licensed under {license}. Read the license before you download it.	{name} 采用 {license} 许可。下载前请阅读许可证。
+	{used} used, {free} free	已用 {used}，可用 {free}
+	· inpainting the masked area	· 局部重绘蒙版区域
+	· whole frame	· 整个框

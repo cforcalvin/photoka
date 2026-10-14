@@ -2989,3 +2989,80 @@ curves	Smooth	Сгладить
 	Remove after each stroke	Удалять после каждого штриха
 	Apply the removal ({key})	Применить удаление ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Штрихов к удалению: {n} (Enter применяет, Esc отменяет)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Для генерации ИИ нужен Mac с Apple silicon (M1 или новее).
+	Accept and Download	Принять и скачать
+	Accept and Install	Принять и установить
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Добавить LCM LoRA и переключиться на 6 шагов, CFG 1,5 и сэмплер LCM
+	Built-in	Встроенный
+	Change…	Изменить…
+	Checkpoint	Чекпойнт
+	Choose a model	Выберите модель
+	Choose a model file on this Mac	Выбрать файл модели на этом Mac
+	Civitai API key	Ключ API Civitai
+	Clear Mask	Очистить маску
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI — программа с открытым исходным кодом под лицензией GPL-3.0. Photoka скачивает её вместе с Python и PyTorch (около 4 ГБ) и запускает как отдельную программу на этом Mac; ничего не покидает ваш компьютер.
+	ComfyUI isn't installed.	ComfyUI не установлен.
+	ComfyUI {version} is installed	ComfyUI {version} установлен
+	ComfyUI {version} is running on port {port}	ComfyUI {version} работает на порту {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Удалить ComfyUI вместе с Python и PyTorch (модели останутся)
+	Describe the image…	Опишите изображение…
+	Download	Скачать
+	Drop .safetensors files here	Перетащите сюда файлы .safetensors
+	Embedding	Эмбеддинг
+	Engine	Движок
+	Erase the mask	Стереть маску
+	Fast (LCM)	Быстро (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Для быстрого режима нужна LCM LoRA: скачайте её в Диспетчере моделей › Рекомендуемые.
+	Frame	Рамка
+	Generate Frame Tool	Инструмент «Рамка генерации»
+	Generate in Frame…	Сгенерировать в рамке…
+	Generate…	Сгенерировать…
+	Guidance (CFG)	Следование (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Какую часть пикселей рамки заменить: 100% их игнорирует; меньшее значение сохраняет больше оригинала.
+	Install ComfyUI…	Установить ComfyUI…
+	Installed	Установленные
+	Invert Mask	Инвертировать маску
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Загружена и готова
+	Log:	Журнал:
+	Mask Frame	Маскировать рамку
+	Model Manager	Диспетчер моделей
+	Model Manager…	Диспетчер моделей…
+	Models folder	Папка моделей
+	Move and resize the frame	Переместить рамку и изменить её размер
+	Needs a Civitai key	Нужен ключ Civitai
+	Negative prompt	Негативный промпт
+	New seed for every image	Новый сид для каждого изображения
+	No LoRAs installed.	LoRA не установлены.
+	No models installed yet.	Модели ещё не установлены.
+	No models yet. Download one from Suggested, or import your own.	Моделей пока нет. Скачайте одну из рекомендуемых или импортируйте свою.
+	Open or create a document to generate into it.	Откройте или создайте документ, чтобы генерировать в нём.
+	Optional, for Civitai downloads	Необязательно, для загрузок с Civitai
+	Paint what to regenerate	Закрасьте то, что нужно перегенерировать
+	Prompt	Промпт
+	Read the license	Прочитать лицензию
+	Regenerate the whole frame	Перегенерировать всю рамку
+	Reset Frame	Сбросить рамку
+	Resume	Продолжить
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Сэмплер
+	Saved in the Keychain	Сохранено в Связке ключей
+	Seed	Сид
+	Start	Запустить
+	Steps	Шаги
+	Strength	Сила
+	Suggested	Рекомендуемые
+	Support files	Вспомогательные файлы
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Встроенному движку нужен Mac с Apple silicon (M1 или новее); используйте ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	Управляемому ComfyUI нужен Mac с Apple silicon.
+	Tokenizer	Токенизатор
+	VAE	VAE
+	What to avoid…	Чего избегать…
+	or click to choose a file	или нажмите, чтобы выбрать файл
+	{name} is licensed under {license}. Read the license before you download it.	{name} распространяется по лицензии {license}. Прочитайте лицензию перед загрузкой.
+	{used} used, {free} free	Занято {used}, свободно {free}
+	· inpainting the masked area	· перерисовка области под маской
+	· whole frame	· вся рамка

@@ -91,6 +91,9 @@ pub const UI_COMMANDS: &[(&str, &str, &[&str], Option<&str>)] = &[
     ("window.theme.breezeDark", "Breeze Dark Theme", &["Window", "Theme"], None),
     ("window.theme.system", "Sync with system", &["Window", "Theme"], None),
     ("edit.search", "Search…", &["Edit"], Some("Cmd+F")),
+    ("window.generate", "Generate", &["Window"], None),
+    ("edit.generateInFrame", "Generate in Frame…", &["Edit"], None),
+    ("window.modelManager", "Model Manager…", &["Window"], None),
     ("help.github", "Photoka on GitHub", &["Help"], None),
     ("help.reportIssue", "Report an Issue…", &["Help"], None),
     ("help.systemInfo", "System Info…", &["Help"], None),
@@ -205,6 +208,12 @@ pub(crate) fn invoke_unguarded(app: &mut PhotokaApp, ctx: &egui::Context, id: &s
     }
     // Window > Timeline panel.
     if let Some(r) = crate::timeline_ui::menu(app, id, &params) {
+        return r;
+    }
+    if let Some(r) = crate::model_manager_ui::menu(app, id, &params) {
+        return r;
+    }
+    if let Some(r) = crate::generate_ui::menu(app, id, &params) {
         return r;
     }
     // Filter › Plug-ins (installed WebAssembly plug-ins, Install Plug-in…).
@@ -673,7 +682,10 @@ pub fn is_enabled(app: &PhotokaApp, id: &str) -> bool {
     if crate::analysis_ui::handles(id) {
         return true;
     }
-    if crate::preset_panels::handles(id) || crate::type_panels_ui::handles(id) || crate::timeline_ui::handles(id) {
+    if let Some(e) = crate::generate_ui::enabled(app, id) {
+        return e;
+    }
+    if crate::preset_panels::handles(id) || crate::type_panels_ui::handles(id) || crate::timeline_ui::handles(id) || crate::model_manager_ui::handles(id) {
         return true;
     }
     if let Some(e) = crate::view_cmds::is_enabled(app, id) {
@@ -765,6 +777,12 @@ fn checked(app: &PhotokaApp, id: &str) -> Option<bool> {
         return Some(c);
     }
     if let Some(c) = crate::timeline_ui::checked(app, id) {
+        return Some(c);
+    }
+    if let Some(c) = crate::model_manager_ui::checked(app, id) {
+        return Some(c);
+    }
+    if let Some(c) = crate::generate_ui::checked(app, id) {
         return Some(c);
     }
     if let Some(c) = crate::type_panels_ui::checked(app, id) {
@@ -889,6 +907,8 @@ pub fn is_live(id: &str) -> bool {
         || crate::preset_panels::handles(id)
         || crate::type_panels_ui::handles(id)
         || crate::timeline_ui::handles(id)
+        || crate::model_manager_ui::handles(id)
+        || crate::generate_ui::handles(id)
 }
 
 /// Commands outside the catalogue that belong right after a catalogue item: `(id, after)`.

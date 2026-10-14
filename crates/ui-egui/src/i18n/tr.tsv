@@ -3775,3 +3775,74 @@ cameraData	Lens	Lens
 @plural	{n} step|{n} steps	{n} adım
 @plural	{warning} (+{n} more brush preset warning)|{warning} (+{n} more brush preset warnings)	{warning} (+{n} fırça ön ayarı uyarısı daha)
 @plural	{what} with {n} warning|{what} with {n} warnings	{what}, {n} uyarı ile
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Yapay zekâ ile üretim, Apple silicon'lu bir Mac (M1 veya sonrası) gerektirir.
+	Accept and Download	Kabul et ve indir
+	Accept and Install	Kabul et ve yükle
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	LCM LoRA'yı ekle ve 6 adım, CFG 1,5 ve LCM örnekleyicisine geç
+	Built-in	Yerleşik
+	Checkpoint	Checkpoint
+	Choose a model	Bir model seçin
+	Choose a model file on this Mac	Bu Mac'te bir model dosyası seç
+	Civitai API key	Civitai API anahtarı
+	Clear Mask	Maskeyi Temizle
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI, GPL-3.0 lisanslı açık kaynaklı bir yazılımdır. Photoka onu Python ve PyTorch ile birlikte (yaklaşık 4 GB) indirir ve bu Mac'te ayrı bir program olarak çalıştırır; hiçbir şey bilgisayarınızdan çıkmaz.
+	ComfyUI isn't installed.	ComfyUI yüklü değil.
+	ComfyUI {version} is installed	ComfyUI {version} yüklü
+	ComfyUI {version} is running on port {port}	ComfyUI {version}, {port} numaralı bağlantı noktasında çalışıyor
+	Delete ComfyUI, its Python and PyTorch (your models stay)	ComfyUI'yi, Python'unu ve PyTorch'unu sil (modelleriniz kalır)
+	Describe the image…	Görüntüyü tanımlayın…
+	Download	İndir
+	Drop .safetensors files here	.safetensors dosyalarını buraya bırakın
+	Embedding	Embedding
+	Engine	Motor
+	Erase the mask	Maskeyi sil
+	Fast (LCM)	Hızlı (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Hızlı mod LCM LoRA gerektirir: Model Yöneticisi › Önerilenler'den indirin.
+	Generate Frame Tool	Üretim Çerçevesi Aracı
+	Generate in Frame…	Çerçevede Üret…
+	Generate…	Üret…
+	Guidance (CFG)	Yönlendirme (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Çerçeve piksellerinin ne kadarının değiştirileceği: %100 onları yok sayar; daha düşük değer orijinalden daha fazlasını korur.
+	Install ComfyUI…	ComfyUI'yi Yükle…
+	Installed	Yüklü
+	LoRA	LoRA
+	LoRAs	LoRA'lar
+	Loaded and ready	Yüklendi ve hazır
+	Log:	Günlük:
+	Mask Frame	Çerçeveyi Maskele
+	Model Manager	Model Yöneticisi
+	Model Manager…	Model Yöneticisi…
+	Models folder	Modeller klasörü
+	Move and resize the frame	Çerçeveyi taşı ve yeniden boyutlandır
+	Needs a Civitai key	Civitai anahtarı gerekir
+	Negative prompt	Negatif istem
+	New seed for every image	Her görüntü için yeni tohum
+	No LoRAs installed.	Yüklü LoRA yok.
+	No models installed yet.	Henüz yüklü model yok.
+	No models yet. Download one from Suggested, or import your own.	Henüz model yok. Önerilenler'den birini indirin veya kendi modelinizi içe aktarın.
+	Open or create a document to generate into it.	İçine üretmek için bir belge açın veya oluşturun.
+	Optional, for Civitai downloads	İsteğe bağlı, Civitai indirmeleri için
+	Paint what to regenerate	Yeniden üretilecek yeri boyayın
+	Prompt	İstem
+	Read the license	Lisansı oku
+	Regenerate the whole frame	Tüm çerçeveyi yeniden üret
+	Reset Frame	Çerçeveyi Sıfırla
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Örnekleyici
+	Saved in the Keychain	Anahtar Zinciri'ne kaydedildi
+	Start	Başlat
+	Steps	Adımlar
+	Suggested	Önerilenler
+	Support files	Destek dosyaları
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Yerleşik motor, Apple silicon'lu bir Mac (M1 veya sonrası) gerektirir; bunun yerine ComfyUI kullanın.
+	The managed ComfyUI needs a Mac with Apple silicon.	Yönetilen ComfyUI, Apple silicon'lu bir Mac gerektirir.
+	Tokenizer	Belirteçleyici
+	VAE	VAE
+	What to avoid…	Kaçınılacaklar…
+	or click to choose a file	veya bir dosya seçmek için tıklayın
+	{name} is licensed under {license}. Read the license before you download it.	{name}, {license} lisansıyla sunulur. İndirmeden önce lisansı okuyun.
+	{used} used, {free} free	{used} kullanılıyor, {free} boş
+	· inpainting the masked area	· maskeli alan yeniden üretiliyor
+	· whole frame	· tüm çerçeve

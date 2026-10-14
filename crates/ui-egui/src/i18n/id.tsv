@@ -3032,3 +3032,80 @@ curves	Smooth	Haluskan
 	Remove after each stroke	Hapus setelah setiap goresan
 	Apply the removal ({key})	Terapkan penghapusan ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Goresan untuk dihapus: {n} (Enter menerapkan, Esc membatalkan)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Pembuatan AI memerlukan Mac dengan Apple silicon (M1 atau lebih baru).
+	Accept and Download	Terima dan unduh
+	Accept and Install	Terima dan instal
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Tambahkan LoRA LCM dan beralih ke 6 langkah, CFG 1,5, dan sampler LCM
+	Built-in	Bawaan
+	Change…	Ubah…
+	Checkpoint	Checkpoint
+	Choose a model	Pilih model
+	Choose a model file on this Mac	Pilih file model di Mac ini
+	Civitai API key	Kunci API Civitai
+	Clear Mask	Hapus masker
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI adalah perangkat lunak sumber terbuka berlisensi GPL-3.0. Photoka mengunduhnya bersama Python dan PyTorch (sekitar 4 GB) dan menjalankannya sebagai program terpisah di Mac ini; tidak ada yang keluar dari komputer Anda.
+	ComfyUI isn't installed.	ComfyUI belum diinstal.
+	ComfyUI {version} is installed	ComfyUI {version} sudah diinstal
+	ComfyUI {version} is running on port {port}	ComfyUI {version} berjalan di port {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Hapus ComfyUI beserta Python dan PyTorch-nya (model Anda tetap ada)
+	Describe the image…	Jelaskan gambarnya…
+	Download	Unduh
+	Drop .safetensors files here	Letakkan file .safetensors di sini
+	Embedding	Embedding
+	Engine	Mesin
+	Erase the mask	Hapus masker
+	Fast (LCM)	Cepat (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Mode cepat memerlukan LoRA LCM: unduh dari Pengelola Model › Disarankan.
+	Frame	Bingkai
+	Generate Frame Tool	Alat Bingkai Pembuatan
+	Generate in Frame…	Buat di Bingkai…
+	Generate…	Buat…
+	Guidance (CFG)	Panduan (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Seberapa banyak piksel bingkai yang diganti: 100% mengabaikannya; lebih rendah mempertahankan lebih banyak bagian asli.
+	Install ComfyUI…	Instal ComfyUI…
+	Installed	Terinstal
+	Invert Mask	Balik masker
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Dimuat dan siap
+	Log:	Log:
+	Mask Frame	Masker bingkai
+	Model Manager	Pengelola Model
+	Model Manager…	Pengelola Model…
+	Models folder	Folder model
+	Move and resize the frame	Pindahkan dan ubah ukuran bingkai
+	Needs a Civitai key	Perlu kunci Civitai
+	Negative prompt	Prompt negatif
+	New seed for every image	Seed baru untuk setiap gambar
+	No LoRAs installed.	Belum ada LoRA terinstal.
+	No models installed yet.	Belum ada model terinstal.
+	No models yet. Download one from Suggested, or import your own.	Belum ada model. Unduh dari Disarankan, atau impor milik Anda sendiri.
+	Open or create a document to generate into it.	Buka atau buat dokumen untuk membuat gambar di dalamnya.
+	Optional, for Civitai downloads	Opsional, untuk unduhan Civitai
+	Paint what to regenerate	Lukis bagian yang akan dibuat ulang
+	Prompt	Prompt
+	Read the license	Baca lisensi
+	Regenerate the whole frame	Buat ulang seluruh bingkai
+	Reset Frame	Atur ulang bingkai
+	Resume	Lanjutkan
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Sampler
+	Saved in the Keychain	Disimpan di Rantai Kunci
+	Seed	Seed
+	Start	Mulai
+	Steps	Langkah
+	Strength	Kekuatan
+	Suggested	Disarankan
+	Support files	File pendukung
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Mesin bawaan memerlukan Mac dengan Apple silicon (M1 atau lebih baru); gunakan ComfyUI sebagai gantinya.
+	The managed ComfyUI needs a Mac with Apple silicon.	ComfyUI terkelola memerlukan Mac dengan Apple silicon.
+	Tokenizer	Tokenizer
+	VAE	VAE
+	What to avoid…	Yang harus dihindari…
+	or click to choose a file	atau klik untuk memilih file
+	{name} is licensed under {license}. Read the license before you download it.	{name} berlisensi {license}. Baca lisensinya sebelum mengunduh.
+	{used} used, {free} free	{used} terpakai, {free} kosong
+	· inpainting the masked area	· mengisi ulang area bermasker
+	· whole frame	· seluruh bingkai

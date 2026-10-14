@@ -89,6 +89,7 @@ pub mod flick_pan;
 mod font_preview;
 pub mod frame_tool;
 pub mod gallery_ui;
+pub mod generate_ui;
 pub mod gpu_canvas;
 pub mod gpu_status;
 pub mod gradient_ui;
@@ -119,6 +120,7 @@ pub mod mask_trash_prompt;
 pub mod menu_catalog;
 pub mod menu_nav;
 pub mod menus;
+pub mod model_manager_ui;
 pub mod monitor_status;
 pub mod move_box;
 pub mod move_hover;
@@ -1603,7 +1605,7 @@ impl eframe::App for PhotokaApp {
         if ctx.input(|i| !i.raw.hovered_files.is_empty()) {
             ctx.request_repaint();
         }
-        let dropped = ctx.input(|i| i.raw.dropped_files.clone());
+        let dropped = model_manager_ui::take_model_drops(self, ctx.input(|i| i.raw.dropped_files.clone()));
         if !dropped.is_empty() {
             let at = self.services.cursor_pos.as_mut().and_then(|f| f(ctx));
             self.open_dropped(ctx, dropped, at);
@@ -1710,6 +1712,8 @@ impl eframe::App for PhotokaApp {
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);
+        generate_ui::windows(self, &ctx);
+        model_manager_ui::windows(self, &ctx);
         workspace_ui::windows(self, &ctx);
         palette::show(self, &ctx);
         dialogs::show(self, &ctx);

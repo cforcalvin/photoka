@@ -3395,6 +3395,7 @@ pub fn canvas_view(app: &mut PhotokaApp, ui: &mut egui::Ui, idx: usize, rect: Re
         crate::gradient_ui::draw_overlay(app, &painter, &xf);
         crate::slice_ui::draw_overlay(app, &painter, &xf);
         crate::frame_tool::draw_overlay(app, &painter, &xf);
+        crate::generate_ui::draw_overlay(app, &painter, &xf);
         crate::artboard_tool::draw_overlay(app, &painter, &xf);
         // Tool cursors (Photoshop-style).
         let guide_hover = response.hover_pos().and_then(|p| {
@@ -4549,6 +4550,10 @@ pub fn tool_event(app: &mut PhotokaApp, ev: ToolEvent, mods: egui::Modifiers) {
     }
     // Slice and Slice Select tools.
     if crate::slice_ui::pointer(app, ev, mods) {
+        return;
+    }
+    // Generate Frame tool: the AI generation frame and its inpaint mask.
+    if crate::generate_ui::pointer(app, ev, mods) {
         return;
     }
     // Frame tool: draw rectangular and elliptical frames.

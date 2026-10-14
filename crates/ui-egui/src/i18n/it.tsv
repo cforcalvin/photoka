@@ -4006,3 +4006,74 @@ navigator	Zoom	Zoom
 	Remove after each stroke	Rimuovi dopo ogni tratto
 	Apply the removal ({key})	Applica la rimozione ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Tratti da rimuovere: {n} (Invio applica, Esc annulla)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	La generazione IA richiede un Mac con Apple silicon (M1 o successivo).
+	Accept and Download	Accetta e scarica
+	Accept and Install	Accetta e installa
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Aggiungi il LoRA LCM e passa a 6 passi, CFG 1,5 e al campionatore LCM
+	Built-in	Integrato
+	Checkpoint	Checkpoint
+	Choose a model	Scegli un modello
+	Choose a model file on this Mac	Scegli un file modello su questo Mac
+	Civitai API key	Chiave API Civitai
+	Clear Mask	Cancella maschera
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI è software open source con licenza GPL-3.0. Photoka lo scarica con Python e PyTorch (circa 4 GB) e lo esegue come programma separato su questo Mac; nulla lascia il tuo computer.
+	ComfyUI isn't installed.	ComfyUI non è installato.
+	ComfyUI {version} is installed	ComfyUI {version} è installato
+	ComfyUI {version} is running on port {port}	ComfyUI {version} è in esecuzione sulla porta {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Elimina ComfyUI, il suo Python e PyTorch (i tuoi modelli restano)
+	Describe the image…	Descrivi l'immagine…
+	Download	Scarica
+	Drop .safetensors files here	Trascina qui i file .safetensors
+	Embedding	Embedding
+	Engine	Motore
+	Erase the mask	Cancella la maschera
+	Fast (LCM)	Veloce (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	La modalità veloce richiede il LoRA LCM: scaricalo da Gestione modelli › Suggeriti.
+	Generate Frame Tool	Strumento Cornice di generazione
+	Generate in Frame…	Genera nella cornice…
+	Generate…	Genera…
+	Guidance (CFG)	Guida (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Quanta parte dei pixel della cornice sostituire: 100% li ignora; valori più bassi conservano più dell'originale.
+	Install ComfyUI…	Installa ComfyUI…
+	Installed	Installati
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Caricato e pronto
+	Log:	Registro:
+	Mask Frame	Maschera cornice
+	Model Manager	Gestione modelli
+	Model Manager…	Gestione modelli…
+	Models folder	Cartella modelli
+	Move and resize the frame	Sposta e ridimensiona la cornice
+	Needs a Civitai key	Richiede una chiave Civitai
+	Negative prompt	Prompt negativo
+	New seed for every image	Nuovo seme per ogni immagine
+	No LoRAs installed.	Nessun LoRA installato.
+	No models installed yet.	Nessun modello ancora installato.
+	No models yet. Download one from Suggested, or import your own.	Ancora nessun modello. Scaricane uno da Suggeriti o importa il tuo.
+	Open or create a document to generate into it.	Apri o crea un documento in cui generare.
+	Optional, for Civitai downloads	Facoltativa, per i download da Civitai
+	Paint what to regenerate	Dipingi ciò che va rigenerato
+	Prompt	Prompt
+	Read the license	Leggi la licenza
+	Regenerate the whole frame	Rigenera l'intera cornice
+	Reset Frame	Ripristina cornice
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Campionatore
+	Saved in the Keychain	Salvata nel Portachiavi
+	Start	Avvia
+	Steps	Passi
+	Suggested	Suggeriti
+	Support files	File di supporto
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Il motore integrato richiede un Mac con Apple silicon (M1 o successivo); usa invece ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	Il ComfyUI gestito richiede un Mac con Apple silicon.
+	Tokenizer	Tokenizer
+	VAE	VAE
+	What to avoid…	Cosa evitare…
+	or click to choose a file	oppure fai clic per scegliere un file
+	{name} is licensed under {license}. Read the license before you download it.	{name} è distribuito con licenza {license}. Leggi la licenza prima di scaricarlo.
+	{used} used, {free} free	{used} usati, {free} liberi
+	· inpainting the masked area	· rigenerazione dell'area mascherata
+	· whole frame	· intera cornice

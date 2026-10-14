@@ -31,6 +31,7 @@ photoka-io = { workspace = true }
 photoka-psd = { workspace = true }
 photoka-format = { workspace = true }
 photoka-plugins = { workspace = true }
+photoka-ml = { workspace = true }
 blake3 = { version = "1.8", default-features = false, features = ["pure"] }
 photoka-codecs = { workspace = true }
 flate2 = { workspace = true }

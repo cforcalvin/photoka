@@ -3653,3 +3653,77 @@ curves	Smooth	スムーズ
 	Remove after each stroke	ストロークごとに削除
 	Apply the removal ({key})	削除を適用 ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	削除するストローク: {n}（Enter で適用、Esc で取り消し）
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	AI 生成には Apple シリコン搭載の Mac（M1 以降）が必要です。
+	Accept and Download	同意してダウンロード
+	Accept and Install	同意してインストール
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	LCM LoRA を追加し、6 ステップ・CFG 1.5・LCM サンプラーに切り替えます
+	Built-in	内蔵
+	Change…	変更…
+	Checkpoint	チェックポイント
+	Choose a model	モデルを選択
+	Choose a model file on this Mac	この Mac のモデルファイルを選択
+	Civitai API key	Civitai API キー
+	Clear Mask	マスクを消去
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI は GPL-3.0 ライセンスのオープンソースソフトウェアです。Photoka は Python と PyTorch（約 4 GB）とともにダウンロードし、この Mac 上で別のプログラムとして実行します。データがコンピュータの外に出ることはありません。
+	ComfyUI isn't installed.	ComfyUI はインストールされていません。
+	ComfyUI {version} is installed	ComfyUI {version} はインストール済みです
+	ComfyUI {version} is running on port {port}	ComfyUI {version} はポート {port} で実行中です
+	Delete ComfyUI, its Python and PyTorch (your models stay)	ComfyUI とその Python・PyTorch を削除します（モデルは残ります）
+	Describe the image…	画像を説明してください…
+	Download	ダウンロード
+	Drop .safetensors files here	.safetensors ファイルをここにドロップ
+	Embedding	埋め込み
+	Engine	エンジン
+	Erase the mask	マスクを消す
+	Fast (LCM)	高速（LCM）
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	高速モードには LCM LoRA が必要です。モデルマネージャ › おすすめ からダウンロードしてください。
+	Generate Frame Tool	生成フレームツール
+	Generate in Frame…	フレーム内に生成…
+	Generate…	生成…
+	Guidance (CFG)	ガイダンス（CFG）
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	フレームのピクセルをどれだけ置き換えるか。100% では無視し、低くすると元の画像を多く残します。
+	Install ComfyUI…	ComfyUI をインストール…
+	Installed	インストール済み
+	Invert Mask	マスクを反転
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	読み込み済み・準備完了
+	Log:	ログ：
+	Mask Frame	フレームをマスク
+	Model Manager	モデルマネージャ
+	Model Manager…	モデルマネージャ…
+	Models folder	モデルフォルダ
+	Move and resize the frame	フレームを移動・サイズ変更
+	Needs a Civitai key	Civitai キーが必要
+	Negative prompt	ネガティブプロンプト
+	New seed for every image	画像ごとに新しいシード
+	No LoRAs installed.	LoRA はインストールされていません。
+	No models installed yet.	まだモデルがインストールされていません。
+	No models yet. Download one from Suggested, or import your own.	まだモデルがありません。おすすめからダウンロードするか、手持ちのモデルを読み込んでください。
+	Open or create a document to generate into it.	生成するには、ドキュメントを開くか作成してください。
+	Optional, for Civitai downloads	任意。Civitai からのダウンロード用
+	Paint what to regenerate	再生成する部分を塗る
+	Prompt	プロンプト
+	Read the license	ライセンスを読む
+	Regenerate the whole frame	フレーム全体を再生成
+	Reset Frame	フレームをリセット
+	Resume	再開
+	SD 1.5 Inpainting	SD 1.5 インペイント
+ai	Sampler	サンプラー
+	Saved in the Keychain	キーチェーンに保存済み
+	Start	開始
+	Steps	ステップ
+	Suggested	おすすめ
+	Support files	サポートファイル
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	内蔵エンジンには Apple シリコン搭載の Mac（M1 以降）が必要です。代わりに ComfyUI を使用してください。
+	The managed ComfyUI needs a Mac with Apple silicon.	管理対象の ComfyUI には Apple シリコン搭載の Mac が必要です。
+	Tokenizer	トークナイザー
+	VAE	VAE
+	What to avoid…	避けたいもの…
+	or click to choose a file	またはクリックしてファイルを選択
+	{name} is licensed under {license}. Read the license before you download it.	{name} は {license} でライセンスされています。ダウンロードする前にライセンスをお読みください。
+	{used} used, {free} free	{used} 使用中、空き {free}
+	· inpainting the masked area	· マスク範囲をインペイント
+	· whole frame	· フレーム全体

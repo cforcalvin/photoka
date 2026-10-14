@@ -1,0 +1,199 @@
+# Suggested models for Photoka's AI generation mode (Model Manager › Suggested).
+#
+# Nothing here is downloaded until the user clicks Download and accepts the entry's license.
+# Every entry is pinned: `size` is the exact byte count and `sha256` the hash of the file, and the
+# download fails if either doesn't match. Civitai files need the user's own Civitai API key
+# (`requires_key`). Checked against the sources on 2026-10-13; `crates/ml/src/catalog.rs` tests
+# that every entry is complete.
+
+version = 1
+
+[[model]]
+id = "sd15"
+name = "Stable Diffusion 1.5"
+description = "The original general-purpose SD 1.5 model. A good neutral base for LoRAs."
+kind = "checkpoint"
+family = "sd15"
+tags = ["general"]
+source = "huggingface"
+url = "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive/resolve/main/v1-5-pruned-emaonly-fp16.safetensors"
+page = "https://huggingface.co/Comfy-Org/stable-diffusion-v1-5-archive"
+file_name = "v1-5-pruned-emaonly-fp16.safetensors"
+size = 2132696762
+sha256 = "e9476a13728cd75d8279f6ec8bad753a66a1957ca375a1464dc63b37db6e3916"
+license = "CreativeML OpenRAIL-M"
+license_url = "https://huggingface.co/spaces/CompVis/stable-diffusion-license"
+defaults = { steps = 25, cfg = 7.5, sampler = "dpmpp_2m_karras" }
+
+[[model]]
+id = "cyberrealistic-revamp"
+name = "CyberRealistic Revamp"
+description = "Photorealistic portraits and scenes (SD 1.5, v3.2 fp16). Needs a Civitai API key."
+kind = "checkpoint"
+family = "sd15"
+tags = ["photoreal"]
+source = "civitai"
+url = "https://civitai.com/api/download/models/429696?fileId=350593"
+page = "https://civitai.com/models/385039"
+file_name = "cyberrealisticRevamp_v32.safetensors"
+size = 2132626066
+sha256 = "fe9b44303137289b3dcf5241f79d9967614863ee615e2e8e0bbd68bb01371e35"
+license = "CreativeML OpenRAIL-M (with the author's Civitai permissions)"
+license_url = "https://civitai.com/models/385039"
+requires_key = true
+defaults = { steps = 30, cfg = 6.0, sampler = "dpmpp_2m_karras" }
+
+[[model]]
+id = "cyberrealistic"
+name = "CyberRealistic (Final)"
+description = "Photorealistic SD 1.5 model, downloadable without an account."
+kind = "checkpoint"
+family = "sd15"
+tags = ["photoreal"]
+source = "huggingface"
+url = "https://huggingface.co/cyberdelia/CyberRealistic/resolve/main/CyberRealistic_FINAL_FP16.safetensors"
+page = "https://huggingface.co/cyberdelia/CyberRealistic"
+file_name = "CyberRealistic_FINAL_FP16.safetensors"
+size = 2132651162
+sha256 = "2209c07b331a06cb28cf7c830ec758ae5b49eb97fab21f5de6b18c7be8b41554"
+license = "CreativeML OpenRAIL-M"
+license_url = "https://huggingface.co/cyberdelia/CyberRealistic"
+defaults = { steps = 30, cfg = 6.0, sampler = "dpmpp_2m_karras" }
+
+[[model]]
+id = "dreamshaper8"
+name = "DreamShaper 8"
+description = "Light all-rounder for digital art, illustration and concept art."
+kind = "checkpoint"
+family = "sd15"
+tags = ["digital-art", "illustration"]
+source = "huggingface"
+url = "https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_pruned.safetensors"
+page = "https://huggingface.co/Lykon/DreamShaper"
+file_name = "DreamShaper_8_pruned.safetensors"
+size = 2132625894
+sha256 = "879db523c30d3b9017143d56705015e15a2cb5628762c11d086fed9538abd7fd"
+license = "CreativeML OpenRAIL-M (per the author)"
+license_url = "https://huggingface.co/Lykon/DreamShaper"
+defaults = { steps = 25, cfg = 7.0, sampler = "dpmpp_2m_karras" }
+
+[[model]]
+id = "dreamshaper8-inpainting"
+name = "DreamShaper 8 Inpainting"
+description = "Inpainting version of DreamShaper 8: best for filling masked areas seamlessly."
+kind = "checkpoint"
+family = "sd15-inpaint"
+tags = ["inpainting", "digital-art"]
+source = "huggingface"
+url = "https://huggingface.co/Lykon/DreamShaper/resolve/main/DreamShaper_8_INPAINTING.inpainting.safetensors"
+page = "https://huggingface.co/Lykon/DreamShaper"
+file_name = "DreamShaper_8_INPAINTING.inpainting.safetensors"
+size = 2132703862
+sha256 = "ac84e05d5039d7a8aea3ced335ac7c56da6d3c6816465651f928b137c3a7b24a"
+license = "CreativeML OpenRAIL-M (per the author)"
+license_url = "https://huggingface.co/Lykon/DreamShaper"
+defaults = { steps = 25, cfg = 7.0, sampler = "dpmpp_2m_karras" }
+
+[[model]]
+id = "comic-book-lora"
+name = "Comic Book Page Style (LoRA)"
+description = "Western comic, manga and cartoon panels. Use with any SD 1.5 checkpoint; trigger words: cartoon, comic. Needs a Civitai API key."
+kind = "lora"
+family = "sd15"
+tags = ["comic", "illustration"]
+source = "civitai"
+url = "https://civitai.com/api/download/models/1499349?fileId=1399205"
+page = "https://civitai.com/models/462611"
+file_name = "comic-book-page-style-sd15.safetensors"
+size = 302108816
+sha256 = "7781d1bdda05df8a386d400f938b3681e9c1c1fd488fd09b25491f9d1b463daf"
+license = "CreativeML OpenRAIL-M (with the author's Civitai permissions: no commercial use)"
+license_url = "https://civitai.com/models/462611"
+requires_key = true
+trigger_words = ["cartoon", "comic"]
+defaults = { steps = 25, cfg = 7.0, sampler = "dpmpp_2m_karras", lora_weight = 0.8 }
+
+[[model]]
+id = "pixel-art-lora"
+name = "8bitdiffuser 64x (pixel art LoRA)"
+description = "Clean pixel art for game sprites and tiles. Use with any SD 1.5 checkpoint; trigger word: pixel_art. Needs a Civitai API key."
+kind = "lora"
+family = "sd15"
+tags = ["pixel-art", "games"]
+source = "civitai"
+url = "https://civitai.com/api/download/models/636318?fileId=551053"
+page = "https://civitai.com/models/185743"
+file_name = "8bitdiffuser-64x-sd15.safetensors"
+size = 37864776
+sha256 = "6a679814b7f641d251c6eaa12a28e8bb2cf8c8a04c0a27994468d93933350292"
+license = "CreativeML OpenRAIL-M (with the author's Civitai permissions)"
+license_url = "https://civitai.com/models/185743"
+requires_key = true
+trigger_words = ["pixel_art"]
+defaults = { steps = 25, cfg = 7.0, sampler = "euler_a", lora_weight = 1.0 }
+
+[[model]]
+id = "lcm-lora-sd15"
+name = "LCM-LoRA (fast, SD 1.5)"
+description = "Makes any SD 1.5 checkpoint generate in 4 to 8 steps (Fast mode)."
+kind = "lora"
+family = "sd15"
+tags = ["fast"]
+source = "huggingface"
+url = "https://huggingface.co/latent-consistency/lcm-lora-sdv1-5/resolve/main/pytorch_lora_weights.safetensors"
+page = "https://huggingface.co/latent-consistency/lcm-lora-sdv1-5"
+file_name = "lcm-lora-sdv1-5.safetensors"
+size = 134621556
+sha256 = "8f90d840e075ff588a58e22c6586e2ae9a6f7922996ee6649a7f01072333afe4"
+license = "CreativeML OpenRAIL++-M"
+license_url = "https://huggingface.co/latent-consistency/lcm-lora-sdv1-5"
+defaults = { steps = 6, cfg = 1.5, sampler = "lcm", lora_weight = 1.0 }
+
+[[model]]
+id = "sd-turbo"
+name = "SD-Turbo"
+description = "Distilled SD 2.1 model: an image in 1 to 4 steps. Larger download (5.2 GB)."
+kind = "checkpoint"
+family = "sd-turbo"
+tags = ["fast", "general"]
+source = "huggingface"
+url = "https://huggingface.co/stabilityai/sd-turbo/resolve/main/sd_turbo.safetensors"
+page = "https://huggingface.co/stabilityai/sd-turbo"
+file_name = "sd_turbo.safetensors"
+size = 5214561328
+sha256 = "3f067a1b943cf162f2b8f8588f6cf5824bd5b4c7d1d88d87164b9ca123616549"
+license = "Stability AI Community License (non-commercial, or commercial under USD 1M annual revenue)"
+license_url = "https://huggingface.co/stabilityai/sd-turbo/blob/main/LICENSE.md"
+defaults = { steps = 2, cfg = 0.0, sampler = "euler_a" }
+
+[[model]]
+id = "vae-ft-mse"
+name = "SD 1.5 VAE (ft-MSE)"
+description = "Sharper, less washed-out decoder for SD 1.5 checkpoints that ship without a good VAE."
+kind = "vae"
+family = "sd15"
+tags = ["quality"]
+source = "huggingface"
+url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original/resolve/main/vae-ft-mse-840000-ema-pruned.safetensors"
+page = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original"
+file_name = "vae-ft-mse-840000-ema-pruned.safetensors"
+size = 334641190
+sha256 = "735e4c3a447a3255760d7f86845f09f937809baa529c17370d83e4c3758f3c75"
+license = "MIT"
+license_url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original"
+
+[[model]]
+id = "clip-tokenizer"
+name = "CLIP tokenizer"
+description = "Turns prompts into tokens. Needed by the built-in engine (2 MB); downloaded with the first model."
+kind = "tokenizer"
+family = "any"
+tags = ["required"]
+source = "huggingface"
+url = "https://huggingface.co/openai/clip-vit-large-patch14/resolve/main/tokenizer.json"
+page = "https://huggingface.co/openai/clip-vit-large-patch14"
+file_name = "clip-vit-large-patch14.json"
+size = 2224003
+sha256 = "a83e0809aa4c3af7208b2df632a7a69668c6d48775b3c3fe4e1b1199d1f8b8f4"
+license = "MIT"
+license_url = "https://huggingface.co/openai/clip-vit-large-patch14"

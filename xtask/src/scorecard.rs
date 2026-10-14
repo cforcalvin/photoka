@@ -82,6 +82,7 @@ fn load_checklists(root: &Path) -> Result<Vec<Checklist>, String> {
         .flatten()
         .map(|e| e.path())
         .filter(|p| p.extension().is_some_and(|x| x == "toml"))
+        .filter(|p| !p.file_name().is_some_and(|n| n.to_string_lossy().starts_with('.')))
         .collect();
     files.sort();
     let mut out = Vec::new();

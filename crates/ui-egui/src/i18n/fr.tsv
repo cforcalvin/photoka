@@ -3045,3 +3045,80 @@ curves	Smooth	Lisser
 	Remove after each stroke	Supprimer après chaque trait
 	Apply the removal ({key})	Appliquer la suppression ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Traits à supprimer : {n} (Entrée applique, Échap annule)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	La génération par IA nécessite un Mac avec puce Apple (M1 ou ultérieure).
+	Accept and Download	Accepter et télécharger
+	Accept and Install	Accepter et installer
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Ajouter le LoRA LCM et passer à 6 étapes, CFG 1,5 et l'échantillonneur LCM
+	Built-in	Intégré
+	Change…	Modifier…
+	Checkpoint	Checkpoint
+	Choose a model	Choisir un modèle
+	Choose a model file on this Mac	Choisir un fichier de modèle sur ce Mac
+	Civitai API key	Clé API Civitai
+	Clear Mask	Effacer le masque
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI est un logiciel libre sous licence GPL-3.0. Photoka le télécharge avec Python et PyTorch (environ 4 Go) et l'exécute comme un programme distinct sur ce Mac ; rien ne quitte votre ordinateur.
+	ComfyUI isn't installed.	ComfyUI n'est pas installé.
+	ComfyUI {version} is installed	ComfyUI {version} est installé
+	ComfyUI {version} is running on port {port}	ComfyUI {version} tourne sur le port {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	Supprimer ComfyUI, son Python et PyTorch (vos modèles sont conservés)
+	Describe the image…	Décrivez l'image…
+	Download	Télécharger
+	Drop .safetensors files here	Déposez des fichiers .safetensors ici
+	Embedding	Embedding
+	Engine	Moteur
+	Erase the mask	Effacer le masque
+	Fast (LCM)	Rapide (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	Le mode rapide nécessite le LoRA LCM : téléchargez-le depuis Gestionnaire de modèles › Suggestions.
+	Frame	Cadre
+	Generate Frame Tool	Outil Cadre de génération
+	Generate in Frame…	Générer dans le cadre…
+	Generate…	Générer…
+	Guidance (CFG)	Guidage (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Part des pixels du cadre à remplacer : 100 % les ignore ; moins conserve davantage l'original.
+	Install ComfyUI…	Installer ComfyUI…
+	Installed	Installés
+	Invert Mask	Inverser le masque
+	LoRA	LoRA
+	LoRAs	LoRA
+	Loaded and ready	Chargé et prêt
+	Log:	Journal :
+	Mask Frame	Masquer le cadre
+	Model Manager	Gestionnaire de modèles
+	Model Manager…	Gestionnaire de modèles…
+	Models folder	Dossier des modèles
+	Move and resize the frame	Déplacer et redimensionner le cadre
+	Needs a Civitai key	Nécessite une clé Civitai
+	Negative prompt	Prompt négatif
+	New seed for every image	Nouvelle graine pour chaque image
+	No LoRAs installed.	Aucun LoRA installé.
+	No models installed yet.	Aucun modèle installé pour l'instant.
+	No models yet. Download one from Suggested, or import your own.	Aucun modèle pour l'instant. Téléchargez-en un depuis Suggestions ou importez le vôtre.
+	Open or create a document to generate into it.	Ouvrez ou créez un document pour y générer.
+	Optional, for Civitai downloads	Facultatif, pour les téléchargements Civitai
+	Paint what to regenerate	Peignez ce qui doit être régénéré
+	Prompt	Prompt
+	Read the license	Lire la licence
+	Regenerate the whole frame	Régénérer tout le cadre
+	Reset Frame	Réinitialiser le cadre
+	Resume	Reprendre
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Échantillonneur
+	Saved in the Keychain	Enregistrée dans le trousseau
+	Seed	Graine
+	Start	Démarrer
+	Steps	Étapes
+	Strength	Intensité
+	Suggested	Suggestions
+	Support files	Fichiers d'assistance
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	Le moteur intégré nécessite un Mac avec puce Apple (M1 ou ultérieure) ; utilisez plutôt ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	Le ComfyUI géré nécessite un Mac avec puce Apple.
+	Tokenizer	Tokeniseur
+	VAE	VAE
+	What to avoid…	Ce qu'il faut éviter…
+	or click to choose a file	ou cliquez pour choisir un fichier
+	{name} is licensed under {license}. Read the license before you download it.	{name} est sous licence {license}. Lisez la licence avant de le télécharger.
+	{used} used, {free} free	{used} utilisés, {free} libres
+	· inpainting the masked area	· régénération de la zone masquée
+	· whole frame	· cadre entier

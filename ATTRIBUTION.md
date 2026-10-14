@@ -91,6 +91,19 @@ Artwork shown in the screenshots (all public domain, via Wikimedia Commons; deta
 | `photoka-type.jpg` | *Among the Sierra Nevada, California*, Albert Bierstadt, 1868 | [Commons](https://commons.wikimedia.org/wiki/File:Albert_Bierstadt_-_Among_the_Sierra_Nevada,_California_-_Google_Art_Project.jpg) |
 | `photoka-export-light.jpg` | *The Kiss*, Gustav Klimt, 1907–1908 | [Commons](https://commons.wikimedia.org/wiki/File:Gustav_Klimt_016.jpg) |
 
+## AI models and ComfyUI (downloaded at the user's request, not committed, not shipped)
+
+Photoka bundles no model weights and no ComfyUI code. The suggested-model catalog
+(`crates/ml/catalog.toml`) lists each model's source URL, sha256, size and licence; a model is
+downloaded only when the user clicks it, after accepting its licence (CreativeML OpenRAIL-M,
+OpenRAIL++-M, the Stability AI Community License, or the author's Civitai terms, as each entry
+says). Model files are never committed to this repository.
+
+| Component | Author | Source | License |
+|---|---|---|---|
+| ComfyUI (optional; installed at the user's request into `~/Library/Application Support/Photoka/comfyui/` and run as a separate process, never linked) | comfyanonymous and contributors | <https://github.com/Comfy-Org/ComfyUI> (pinned release in `crates/ml/src/comfy/install.rs`) | GPL-3.0 |
+| uv (downloaded with ComfyUI to create its Python environment) | Astral Software Inc. | <https://github.com/astral-sh/uv> (pinned release in `crates/ml/src/comfy/install.rs`) | MIT OR Apache-2.0 |
+
 ## Test data (not committed, not shipped)
 
 `corpus/` is gitignored and no test fixtures are committed to the repository.

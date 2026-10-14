@@ -115,7 +115,7 @@ fn apply_u8(t: &Transform, px: &mut [u8]) {
 }
 
 /// Is `p` an RGB matrix/TRC profile with linear curves?
-fn is_linear_rgb(p: &Profile) -> bool {
+pub(crate) fn is_linear_rgb(p: &Profile) -> bool {
     p.color_space == ColorSpace::Rgb && p.is_matrix_shaper() && p.trc.as_ref().is_some_and(|t| t.iter().all(Curve::is_identity))
 }
 

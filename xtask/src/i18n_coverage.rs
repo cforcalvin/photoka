@@ -131,6 +131,10 @@ fn source_files(root: &Path) -> Result<Vec<(PathBuf, String)>, String> {
         for entry in entries {
             let entry = entry.map_err(|e| format!("{}: {e}", path.display()))?;
             let path = entry.path();
+            // Hidden files include macOS AppleDouble `._*` companions on non-Apple volumes.
+            if entry.file_name().to_string_lossy().starts_with('.') {
+                continue;
+            }
             if path.is_dir() {
                 stack.push(path);
             } else if path.extension().and_then(|ext| ext.to_str()) == Some("rs") {

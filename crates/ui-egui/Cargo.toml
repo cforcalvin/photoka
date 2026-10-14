@@ -26,6 +26,7 @@ photoka-vector = { workspace = true }
 photoka-paint = { workspace = true }
 # Reading files to open them (bounded reads, a clear error for files larger than memory).
 photoka-format = { workspace = true }
+photoka-ml = { workspace = true }
 # Decoding the brand mark's PNG (`brand.rs`); already linked through photoka-io.
 photoka-codecs = { workspace = true }
 egui = { workspace = true }

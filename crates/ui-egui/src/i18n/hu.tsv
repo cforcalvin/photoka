@@ -3962,3 +3962,74 @@ cameraRaw	Yellow	Sárga
 	Transform On Drop	Átalakítás elengedéskor
 	Vanishing Point is not active	Az Enyészpont nem aktív
 	Vanishing Point: click four corners to create a plane	Enyészpont: sík létrehozásához kattintson a négy sarokra
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	Az MI-alapú generáláshoz Apple processzoros Mac kell (M1 vagy újabb).
+	Accept and Download	Elfogadás és letöltés
+	Accept and Install	Elfogadás és telepítés
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	Az LCM LoRA hozzáadása és váltás 6 lépésre, 1,5-ös CFG-re és LCM mintavételezőre
+	Built-in	Beépített
+	Checkpoint	Checkpoint
+	Choose a model	Válassz modellt
+	Choose a model file on this Mac	Modellfájl választása ezen a Macen
+	Civitai API key	Civitai API-kulcs
+	Clear Mask	Maszk törlése
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	A ComfyUI nyílt forráskódú szoftver GPL-3.0 licenccel. A Photoka letölti Pythonnal és PyTorch-csal együtt (kb. 4 GB), és külön programként futtatja ezen a Macen; semmi sem hagyja el a gépedet.
+	ComfyUI isn't installed.	A ComfyUI nincs telepítve.
+	ComfyUI {version} is installed	A ComfyUI {version} telepítve van
+	ComfyUI {version} is running on port {port}	A ComfyUI {version} fut a(z) {port} porton
+	Delete ComfyUI, its Python and PyTorch (your models stay)	A ComfyUI, a Python és a PyTorch törlése (a modelljeid megmaradnak)
+	Describe the image…	Írd le a képet…
+	Download	Letöltés
+	Drop .safetensors files here	Húzd ide a .safetensors fájlokat
+	Embedding	Embedding
+	Engine	Motor
+	Erase the mask	A maszk radírozása
+	Fast (LCM)	Gyors (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	A gyors módhoz az LCM LoRA kell: töltsd le a Modellkezelő › Javasolt lapon.
+	Generate Frame Tool	Generálási keret eszköz
+	Generate in Frame…	Generálás a keretben…
+	Generate…	Generálás…
+	Guidance (CFG)	Irányítás (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	A keret képpontjainak mekkora részét cserélje: 100% figyelmen kívül hagyja őket; kisebb érték többet megtart az eredetiből.
+	Install ComfyUI…	ComfyUI telepítése…
+	Installed	Telepített
+	LoRA	LoRA
+	LoRAs	LoRA-k
+	Loaded and ready	Betöltve, kész
+	Log:	Napló:
+	Mask Frame	Keret maszkolása
+	Model Manager	Modellkezelő
+	Model Manager…	Modellkezelő…
+	Models folder	Modellmappa
+	Move and resize the frame	Keret mozgatása és átméretezése
+	Needs a Civitai key	Civitai-kulcs kell
+	Negative prompt	Negatív prompt
+	New seed for every image	Új kezdőérték minden képhez
+	No LoRAs installed.	Nincs telepített LoRA.
+	No models installed yet.	Még nincs telepített modell.
+	No models yet. Download one from Suggested, or import your own.	Még nincs modell. Tölts le egyet a Javasolt lapról, vagy importáld a sajátodat.
+	Open or create a document to generate into it.	Nyiss meg vagy hozz létre egy dokumentumot, hogy generálhass bele.
+	Optional, for Civitai downloads	Nem kötelező, a Civitai-letöltésekhez
+	Paint what to regenerate	Fesd be, amit újra kell generálni
+	Prompt	Prompt
+	Read the license	Licenc elolvasása
+	Regenerate the whole frame	A teljes keret újragenerálása
+	Reset Frame	Keret visszaállítása
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Mintavételező
+	Saved in the Keychain	A Kulcskarikában mentve
+	Start	Indítás
+	Steps	Lépések
+	Suggested	Javasolt
+	Support files	Segédfájlok
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	A beépített motorhoz Apple processzoros Mac kell (M1 vagy újabb); használd helyette a ComfyUI-t.
+	The managed ComfyUI needs a Mac with Apple silicon.	A kezelt ComfyUI-hoz Apple processzoros Mac kell.
+	Tokenizer	Tokenizáló
+	VAE	VAE
+	What to avoid…	Mit kerüljön…
+	or click to choose a file	vagy kattints egy fájl kiválasztásához
+	{name} is licensed under {license}. Read the license before you download it.	A(z) {name} licence: {license}. Olvasd el a licencet, mielőtt letöltöd.
+	{used} used, {free} free	{used} foglalt, {free} szabad
+	· inpainting the masked area	· a maszkolt terület újrafestése
+	· whole frame	· teljes keret

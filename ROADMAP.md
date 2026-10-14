@@ -2,7 +2,7 @@
 
 **Stage: alpha** · next: beta, ~30 points (ready for real work ~45% → ~75%, with reliable PSD) and ~1,100–1,800 h away
 
-> **Last reviewed:** 2026-10-11 · **Last updated:** 2026-10-11 · **Change:** minor (toolbox count 56 of 68, 12 missing) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-11 · **Last updated:** 2026-10-13 · **Change:** minor (offline AI generation landed; AI features 15%) · **Target:** Adobe Photoshop 2026
 
 Photoka's one-page summary of how close it is to Adobe Photoshop 2026 (27.11.0, measured from
 the installed app on 2026-10-10) at version 0.6.0. Detail: [target-app parity](docs/target-app-parity.md)
@@ -59,7 +59,7 @@ four are partial in depth, none blocked.
 | Stability | 45% | 150–250 | [gaps](docs/gaps.md#g3-user-reported-bug-backlog) |
 | Platforms | 80% | 30–60 | [scorecard](docs/scorecard.md#distribution) |
 | Ecosystem / plug-ins / scripting | 15% | 250–450 | [gaps](docs/gaps.md#g16-plug-in-compatibility) |
-| AI features | 10% | 300–600 | [gaps](docs/gaps.md#g15-ai-and-generative-features) |
+| AI features | 15% | 220–500 | [ai-generation](docs/ai-generation.md), [gaps](docs/gaps.md#g15-ai-and-generative-features) |
 
 ## Features
 
@@ -80,7 +80,7 @@ four are partial in depth, none blocked.
 | Print, export, Save for Web | 50% | 60–100 |
 | Video / timeline, data-driven graphics | 30% | 100–200 |
 | Workspace, panels, preferences | 40% | 150–250 |
-| AI / generative | 10% | 300–600 |
+| AI / generative | 15% | 220–500 |
 
 Rows and evidence: [target-app-parity › Feature areas](docs/target-app-parity.md#feature-areas).
 
@@ -122,6 +122,7 @@ Detail and the next releases: [docs/roadmap.md](docs/roadmap.md).
 
 | Date | Entry |
 |---|---|
+| 2026-10-13 | Offline AI generation (Draw Things-style): Generate Frame tool with inpainting mask, SD 1.5/Turbo/LCM and LoRAs on a built-in Metal engine or a Photoka-managed ComfyUI, Model Manager with click-to-download models ([docs](docs/ai-generation.md)) |
 | 2026-10-10 | Full re-measure against Photoshop 2026 27.11.0 (installed bundle inspected): breadth ~76%, ready ~45%, alpha. Progress docs reorganized to the craftrules standard (`parity.md` → `parity-checklist.md`, `parity-estimate.md` merged into `target-app-parity.md`). 0.6.0 released. |
 | 2026-10-09 | Remove tool, Rotate View, crop rotation; OpenRaster and Paint.NET; 39 Affinity documents in the corpus |
 | 2026-10-08 | 0.5.0. Affinity import; Magnetic Lasso, Pattern Stamp, Mixer Brush, Pencil, Patch, Vertical Type on the toolbar |
@@ -135,6 +136,7 @@ Detail and the next releases: [docs/roadmap.md](docs/roadmap.md).
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-13 | minor | AI features 10% → 15% (offline generation landed); headline numbers unchanged |
 | 2026-10-11 | minor | Toolbox count 56 of 68 (12 missing) with the Convert Point tool (#3204) |
 | 2026-10-10 | minor | Readiness by audience with hours per tier |
 | 2026-10-10 | minor | Mainstream-practitioner and essentials-user numbers added |

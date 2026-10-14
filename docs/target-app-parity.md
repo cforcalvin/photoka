@@ -1,6 +1,6 @@
 # Photoka vs Adobe Photoshop: target-app parity
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-10 · **Change:** minor (Tilt-Shift measurements added; earlier the same day: major, full re-measure against Photoshop 2026 27.11.0; merged `parity-estimate.md` and the roadmap's honest assessment) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-13 · **Change:** minor (AI: offline generation and inpainting landed; AI rows updated, headline numbers unchanged) · **Target:** Adobe Photoshop 2026
 
 The authoritative answer to "how close is Photoka to Photoshop, and how much work is left". The
 one-page summary is [`ROADMAP.md`](../ROADMAP.md); the ranked work list is [`gaps.md`](gaps.md);
@@ -65,7 +65,7 @@ architecture and the PSD writer are the serial parts.
 | Panels | 10% | 30 / 35 Window-menu panels | 86% | measured (`view_cmds.rs`, panel modules) |
 | Filters and adjustments | 10% | every Filter and Image › Adjustments item live; Filter Gallery 47 looks | 100% | measured (menu catalog) |
 | File formats (usage-weighted) | 15% | 13 of 31 Photoshop formats supported in Photoshop's directions, 4 partial; the common ones (PSD/PSB, TIFF, JPEG, PNG, WebP) all present | ~80% (48% by count) | measured list, estimated weights ([file-format-parity.md](file-format-parity.md)) |
-| AI / generative | 10% | classical Select Subject/Sky, Remove tool, Content-Aware; no Generative Fill/Expand, Neural Filters, Sky Replacement, Super Zoom | ~15% | estimated |
+| AI / generative | 10% | classical Select Subject/Sky, Remove tool, Content-Aware; offline generation and inpainting in a frame (SD 1.5/Turbo/LCM, LoRAs, 2026-10-13, [ai-generation](ai-generation.md)); no Generative Fill/Expand UI, Neural Filters, Sky Replacement, Super Zoom | ~20% | estimated |
 | Ecosystem (plug-ins, scripting, libraries) | 10% | WebAssembly plug-ins, CLI, MCP, actions; no .8BF, UXP/ExtendScript, .atn import, Libraries | ~20% | estimated |
 | **Weighted** | 100% | | **~76%** | |
 
@@ -84,8 +84,8 @@ Weights reflect what a working Photoshop user depends on (photographers, retouch
 | Localization | 5% | 55% | 80–140 | 7 of the 12 key languages at 100% of measured UI keys; Hindi, Arabic, Vietnamese absent; no RTL UI; engine messages English | [localization-parity.md](localization-parity.md) |
 | Platforms | 5% | 80% | 30–60 | macOS (notarized), Windows (unsigned), Linux (AppImage/deb/rpm/Flatpak), web, FreeBSD partial; no Windows ARM64, no in-app updates | [scorecard.md](scorecard.md#distribution) |
 | Ecosystem (plug-ins, scripting, presets, libraries) | 5% | 15% | 250–450 | No .8BF hosting (#2647), no UXP/ExtendScript, no .atn import; .abr/.grd/.pat/.aco/.ase/.cube supported | [gaps.md](gaps.md) |
-| AI features | 5% | 10% | 300–600 | No ML runtime at all (scorecard AUTO-219-7); classical substitutes only. Needs an owner decision and openly licensed models (#41) | [gaps.md](gaps.md) |
-| **Weighted** | 100% | **~46%** | **2,340–4,100** | | |
+| AI features | 5% | 15% | 220–500 | 2026-10-13: local ML runtime (candle on Metal, optional managed ComfyUI) with offline txt2img, img2img and inpainting, LoRAs and a click-to-download model catalog ([ai-generation](ai-generation.md)); Apple silicon only; no Generative Fill/Expand UI, Neural Filters or ML selection | [gaps.md](gaps.md) |
+| **Weighted** | 100% | **~46%** | **2,260–4,000** | | |
 
 ## Mainstream practitioner: ~43%
 
@@ -182,7 +182,7 @@ parity for the area and are already contained in the dimension rows above.
 | Print, export, Save for Web | 50% | 60–100 | JPEG Options dialog missing (FILE-215-19), no Photoshop PDF, no separations, Save for Web settings not remembered |
 | Video / timeline, data-driven graphics | 30% | 100–200 | Menu items live; frame model persists in `.photoka`; no PSD video-layer mapping |
 | Workspace, panels, preferences | 40% | 150–250 | 46 of 149 prefs do nothing; no floating/OS-window panel groups; Libraries, Comments, Contextual Task Bar missing |
-| AI / generative | 10% | 300–600 | See the dimension row |
+| AI / generative | 15% | 220–500 | See the dimension row |
 
 ## Remaining effort and calibration
 
@@ -449,7 +449,7 @@ filled bar. This extends UI reachability and does not claim Photoshop-authored s
 | Performance | 14k+ px on the GPU at ~⅓ the memory; adjustment preview 285 ms → 4–9 ms; font-size edits 297 ms → 4.6 ms; 2026-10-07: 30 MP TIFF open (banded, parallel strip/tile decode) Deflate 345 → 32 ms, LZW 428 → 43 ms, BigTIFF and every IFD readable; 2026-10-09: 4.2 MP Indexed Color, 256 colours, full-resolution CPU preview p50 3018 → 1061 ms (Ryzen AI 7 350, three measured runs; GPU upload excluded); 2026-10-10: Liquify 3500×2200, 800 px brush, visible 1:1 crop 3.20 → 3.63 ms p50 (5 runs) while refreshing ~9× as many pixels | medium-high on rasters | Complex layout documents still laggy (#125/#128); >16384 px GPU tiling in progress (#49). Liquify now displays source-resolution detail above 100% zoom; its ≤1 ms update target is not met (3.73 ms p95 on a Windows run; GPU upload excluded). Native Indexed Color previews run on one background worker with stale-result rejection; large palettes can still take about a second to compute. Web previews remain synchronous. |
 | Stability | Never-crash lint series, crash guard, `panic_hunt` fuzzing in the gate | medium-high | No field crash data yet. |
 | Camera RAW | DNG, CR2, Sony ARW (lossless + compressed), Nikon NEF (lossless + lossy compressed), RW2, uncompressed ORF; 2026-10-09: uncompressed Fujifilm RAF, Bayer and X-Trans (edge-directed X-Trans demosaic; 26 MP X-Trans develop 306 ms on 12 cores) | medium | CR3, compressed RAF and Nikon "lossy after split" still open (#50). Non-DNG cameras have no calibration: their colour (matrix + tone curve) is fitted per file to the camera's embedded JPEG, with the neutral sRGB-primaries fallback when the fit doesn't clearly help (2026-10-08: 8 D3200 NEFs, mean ΔE vs the camera JPEG 11.6–26.0 → 1.0–7.5); measured per-model calibration still open. |
-| AI / generative | none | ~0% | Deferred by decision (#41). |
+| AI / generative | 2026-10-13: offline generation and inpainting in a movable frame, SD 1.5/Turbo/LCM and LoRAs, native candle/Metal engine plus an optional Photoka-managed ComfyUI, Model Manager with a bundled catalog ([ai-generation](ai-generation.md)) | low–medium | Apple silicon only; no Generative Fill/Expand UI, Neural Filters, ML selection, SDXL/Flux or ControlNet. |
 | Ecosystem | Sandboxed WebAssembly plug-ins instead of .8BF; no ExtendScript/UXP/.atn; no Adobe Fonts/Libraries/cloud docs | low | By design for 8BF; scripting compatibility open. |
 | Platforms | macOS (notarized), Windows, Linux (AppImage/deb/rpm/Flatpak bundle), web | medium-high | Flathub later (#173); Windows signing material pending. |
 | Localisation | 2026-10-07: 10 UI languages; menu, `tl!`, blend mode, preference and brush-section coverage enforced by tests; live switching and scoped Preferences previews | medium | Engine errors/status messages still partly English; CJK web fonts, browser-locale detection, and RTL remain open. |
@@ -556,13 +556,14 @@ See [method, raw measurements and reproduction](five-algorithm-performance.md).
 5. **Complex-document performance** (#125/#128) and GPU tiling beyond the texture limit (#49).
 6. **Recurring visual QA** (`cargo run -p photoka-engine --example designer_psd`) and fast
    turnaround on user reports (OS, document size, layer count, screenshot).
-7. Later / needs decisions: generative AI backend (#41), scripting compatibility (ExtendScript /
+7. Later / needs decisions: Generative Fill/Expand and ML selection on top of the local AI engine ([ai-generation](ai-generation.md)), scripting compatibility (ExtendScript /
    UXP / .atn), Flathub (#173), Wayland pen pressure (#79).
 
 ## Revision history
 
 | Date | Change | Summary |
 |---|---|---|
+| 2026-10-13 | minor | AI: offline generation landed; breadth row ~15% → ~20%, ready row 10% → 15%, hours 300–600 → 220–500; headline numbers unchanged after rounding |
 | 2026-10-10 | minor | Added measured Tilt-Shift computation/filtered-proxy gains and inconclusive cases; parity percentages and budgets unchanged |
 | 2026-10-10 | minor | Readiness-by-audience table: percent and hours for full, mainstream and essentials; full number confirmed as the additive weighted sum over dimensions (46%, reported ~45%) |
 | 2026-10-10 | minor | Added mainstream-practitioner (~43%) and essentials-user (~61%) numbers with written weights and discounts; full ready-for-real-work rechecked against its written weights (46%, reported ~45%), unchanged |

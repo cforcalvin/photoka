@@ -3803,3 +3803,74 @@ curves	Smooth	Vloeiend maken
 	Remove after each stroke	Verwijderen na elke streek
 	Apply the removal ({key})	Verwijdering toepassen ({key})
 	Strokes to remove: {n} (Enter applies, Esc cancels)	Streken om te verwijderen: {n} (Enter past toe, Esc annuleert)
+
+# AI generation: Generate panel, Generate Frame tool, Model Manager, ComfyUI
+	AI generation needs a Mac with Apple silicon (M1 or later).	AI-generatie vereist een Mac met Apple silicon (M1 of nieuwer).
+	Accept and Download	Accepteren en downloaden
+	Accept and Install	Accepteren en installeren
+	Add the LCM LoRA and switch to 6 steps, CFG 1.5 and the LCM sampler	De LCM-LoRA toevoegen en overschakelen naar 6 stappen, CFG 1,5 en de LCM-sampler
+	Built-in	Ingebouwd
+	Checkpoint	Checkpoint
+	Choose a model	Kies een model
+	Choose a model file on this Mac	Een modelbestand op deze Mac kiezen
+	Civitai API key	Civitai-API-sleutel
+	Clear Mask	Masker wissen
+	ComfyUI is open-source software under the GPL-3.0 license. Photoka downloads it with Python and PyTorch (about 4 GB) and runs it as a separate program on this Mac; nothing leaves your computer.	ComfyUI is opensourcesoftware onder de GPL-3.0-licentie. Photoka downloadt het met Python en PyTorch (ongeveer 4 GB) en voert het uit als apart programma op deze Mac; er verlaat niets je computer.
+	ComfyUI isn't installed.	ComfyUI is niet geïnstalleerd.
+	ComfyUI {version} is installed	ComfyUI {version} is geïnstalleerd
+	ComfyUI {version} is running on port {port}	ComfyUI {version} draait op poort {port}
+	Delete ComfyUI, its Python and PyTorch (your models stay)	ComfyUI met Python en PyTorch verwijderen (je modellen blijven)
+	Describe the image…	Beschrijf de afbeelding…
+	Download	Downloaden
+	Drop .safetensors files here	Zet .safetensors-bestanden hier neer
+	Embedding	Embedding
+	Engine	Engine
+	Erase the mask	Het masker gummen
+	Fast (LCM)	Snel (LCM)
+	Fast mode needs the LCM LoRA: download it from Model Manager › Suggested.	De snelle modus heeft de LCM-LoRA nodig: download die via Modelbeheer › Aanbevolen.
+	Generate Frame Tool	Gereedschap Generatiekader
+	Generate in Frame…	Genereren in kader…
+	Generate…	Genereren…
+	Guidance (CFG)	Sturing (CFG)
+	How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original.	Hoeveel van de kaderpixels wordt vervangen: 100% negeert ze; lager houdt meer van het origineel.
+	Install ComfyUI…	ComfyUI installeren…
+	Installed	Geïnstalleerd
+	LoRA	LoRA
+	LoRAs	LoRA's
+	Loaded and ready	Geladen en klaar
+	Log:	Logboek:
+	Mask Frame	Kader maskeren
+	Model Manager	Modelbeheer
+	Model Manager…	Modelbeheer…
+	Models folder	Modelmap
+	Move and resize the frame	Kader verplaatsen en schalen
+	Needs a Civitai key	Vereist een Civitai-sleutel
+	Negative prompt	Negatieve prompt
+	New seed for every image	Nieuwe startwaarde voor elke afbeelding
+	No LoRAs installed.	Geen LoRA's geïnstalleerd.
+	No models installed yet.	Nog geen modellen geïnstalleerd.
+	No models yet. Download one from Suggested, or import your own.	Nog geen modellen. Download er een via Aanbevolen of importeer je eigen model.
+	Open or create a document to generate into it.	Open of maak een document om erin te genereren.
+	Optional, for Civitai downloads	Optioneel, voor downloads van Civitai
+	Paint what to regenerate	Schilder wat opnieuw moet worden gegenereerd
+	Prompt	Prompt
+	Read the license	Licentie lezen
+	Regenerate the whole frame	Het hele kader opnieuw genereren
+	Reset Frame	Kader herstellen
+	SD 1.5 Inpainting	SD 1.5 Inpainting
+ai	Sampler	Sampler
+	Saved in the Keychain	Bewaard in de sleutelhanger
+	Start	Starten
+	Steps	Stappen
+	Suggested	Aanbevolen
+	Support files	Ondersteunende bestanden
+	The built-in engine needs a Mac with Apple silicon (M1 or later); use ComfyUI instead.	De ingebouwde engine vereist een Mac met Apple silicon (M1 of nieuwer); gebruik in plaats daarvan ComfyUI.
+	The managed ComfyUI needs a Mac with Apple silicon.	De beheerde ComfyUI vereist een Mac met Apple silicon.
+	Tokenizer	Tokenizer
+	VAE	VAE
+	What to avoid…	Wat te vermijden…
+	or click to choose a file	of klik om een bestand te kiezen
+	{name} is licensed under {license}. Read the license before you download it.	{name} valt onder de licentie {license}. Lees de licentie voordat je het downloadt.
+	{used} used, {free} free	{used} gebruikt, {free} vrij
+	· inpainting the masked area	· gemaskeerd gebied wordt opnieuw gegenereerd
+	· whole frame	· heel kader
