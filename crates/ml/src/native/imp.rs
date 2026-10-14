@@ -461,10 +461,13 @@ impl Loaded {
         let uncond = if use_cfg { Some(self.encode_prompt(&req.negative)?) } else { None };
 
         let schedule = Schedule::sd();
-        let all = schedule.sigmas(ScheduleKind::for_sampler(req.sampler, turbo), req.steps as usize);
+        let kind = ScheduleKind::for_sampler(req.sampler, turbo);
         let init = req.init.as_ref().filter(|_| req.strength < 1.0 || req.mask.is_some() || inpaint_model);
-        let i0 = if init.is_some() && req.mask.is_none() { sampling::img2img_start(all.len() - 1, req.strength) } else { 0 };
-        let sigmas: Vec<f64> = all.get(i0..).map(<[f64]>::to_vec).unwrap_or_else(|| all.clone());
+        // Strength applies with or without a mask: below 1 the frame is noised only part way.
+        let sigmas = match init {
+            Some(_) => schedule.img2img_sigmas(kind, req.steps as usize, req.strength),
+            None => schedule.sigmas(kind, req.steps as usize),
+        };
         let shape = (1, 4, lh, lw);
         let noise = self.noise(req.seed, shape)?;
         let sigma0 = sigmas.first().copied().unwrap_or(1.0);
@@ -499,9 +502,11 @@ impl Loaded {
             (Some(l), Some(m)) if !inpaint_model => Some((l.to_dtype(DType::F32).map_err(ce)?, m.clone())),
             _ => None,
         };
-        let mut x = match (&init_latent, inpaint_model) {
-            (Some(l), false) => l.to_dtype(DType::F32).and_then(|l| l.add(&noise.affine(sigma0, 0.0)?)).map_err(ce)?,
-            _ => noise.affine(sigma0, 0.0).map_err(ce)?,
+        // Inpainting checkpoints start from pure noise at full strength, as they were trained.
+        let start = init_latent.as_ref().filter(|_| !inpaint_model || req.strength < 1.0);
+        let mut x = match start {
+            Some(l) => l.to_dtype(DType::F32).and_then(|l| l.add(&noise.affine(sigma0, 0.0)?)).map_err(ce)?,
+            None => noise.affine(sigma0, 0.0).map_err(ce)?,
         };
         let steps = sigmas.len().saturating_sub(1);
         // Previews cost a small VAE decode each: at most three, and none for quick runs.

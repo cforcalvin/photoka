@@ -4,7 +4,8 @@
 //! `CheckpointLoaderSimple` → `LoraLoader`… → `CLIPTextEncode` ×2 → latent → `KSampler` →
 //! `VAEDecode` → `PreviewImage`. The latent is an `EmptyLatentImage` (text to image), a
 //! `VAEEncode` of the uploaded frame (image to image), `VAEEncodeForInpaint` (inpainting
-//! checkpoints) or `VAEEncode` + `SetLatentNoiseMask` (inpainting with a regular checkpoint).
+//! checkpoints at full strength; `InpaintModelConditioning` below it) or `VAEEncode` +
+//! `SetLatentNoiseMask` (inpainting with a regular checkpoint).
 //! The uploaded frame carries the mask in its alpha (transparent = regenerate), which
 //! `LoadImage` turns into its MASK output.
 
@@ -56,15 +57,28 @@ pub fn build(req: &GenerateRequest, family: Family, image: Option<&str>) -> Valu
     nodes.insert("5".into(), json!({"class_type": "CLIPTextEncode", "inputs": {"text": req.negative, "clip": clip}}));
 
     let masked = req.mask.is_some();
+    let (mut positive, mut negative) = (json!(["4", 0]), json!(["5", 0]));
     let (latent, denoise) = match image {
         Some(name) if masked || req.strength < 1.0 => {
             nodes.insert("7".into(), json!({"class_type": "LoadImage", "inputs": {"image": name}}));
-            if masked && family == Family::Sd15Inpaint {
+            if masked && family == Family::Sd15Inpaint && req.strength >= 1.0 {
                 nodes.insert(
                     "8".into(),
                     json!({"class_type": "VAEEncodeForInpaint", "inputs": {"pixels": ["7", 0], "vae": vae, "mask": ["7", 1], "grow_mask_by": INPAINT_GROW}}),
                 );
                 (json!(["8", 0]), 1.0)
+            } else if masked && family == Family::Sd15Inpaint {
+                // `VAEEncodeForInpaint` greys out the masked pixels, so it needs full denoise;
+                // this node keeps them, which partial strength needs.
+                nodes.insert(
+                    "10".into(),
+                    json!({"class_type": "InpaintModelConditioning", "inputs": {
+                        "positive": positive, "negative": negative, "vae": vae, "pixels": ["7", 0], "mask": ["7", 1], "noise_mask": true,
+                    }}),
+                );
+                positive = json!(["10", 0]);
+                negative = json!(["10", 1]);
+                (json!(["10", 2]), req.strength)
             } else if masked {
                 nodes.insert("8".into(), json!({"class_type": "VAEEncode", "inputs": {"pixels": ["7", 0], "vae": vae}}));
                 nodes.insert("9".into(), json!({"class_type": "SetLatentNoiseMask", "inputs": {"samples": ["8", 0], "mask": ["7", 1]}}));
@@ -84,7 +98,7 @@ pub fn build(req: &GenerateRequest, family: Family, image: Option<&str>) -> Valu
         "20".into(),
         json!({"class_type": "KSampler", "inputs": {
             "seed": req.seed, "steps": req.steps, "cfg": req.cfg, "sampler_name": sampler_name, "scheduler": scheduler,
-            "denoise": denoise, "model": model, "positive": ["4", 0], "negative": ["5", 0], "latent_image": latent,
+            "denoise": denoise, "model": model, "positive": positive, "negative": negative, "latent_image": latent,
         }}),
     );
     nodes.insert("21".into(), json!({"class_type": "VAEDecode", "inputs": {"samples": ["20", 0], "vae": vae}}));
@@ -161,14 +175,30 @@ mod tests {
         let mut r = req();
         r.init = Some(Rgba8::new(512, 384).unwrap());
         r.mask = Some(Mask::new(512, 384).unwrap());
-        r.strength = 0.9;
         let w = build(&r, Family::Sd15Inpaint, Some("frame.png"));
         assert_eq!(w["7"], json!({"class_type": "LoadImage", "inputs": {"image": "frame.png"}}));
         assert_eq!(w["8"]["class_type"], "VAEEncodeForInpaint");
         assert_eq!(w["8"]["inputs"]["mask"], json!(["7", 1]));
         assert_eq!(w["20"]["inputs"]["latent_image"], json!(["8", 0]));
         assert_eq!(w["20"]["inputs"]["denoise"], 1.0);
+        assert_eq!(w["20"]["inputs"]["positive"], json!(["4", 0]));
 
+        // Below full strength an inpainting checkpoint keeps the masked pixels and the strength.
+        r.strength = 0.3;
+        let w = build(&r, Family::Sd15Inpaint, Some("frame.png"));
+        assert!(w.get("8").is_none());
+        assert_eq!(
+            w["10"],
+            json!({"class_type": "InpaintModelConditioning", "inputs": {
+                "positive": ["4", 0], "negative": ["5", 0], "vae": ["1", 2], "pixels": ["7", 0], "mask": ["7", 1], "noise_mask": true,
+            }})
+        );
+        assert_eq!(w["20"]["inputs"]["positive"], json!(["10", 0]));
+        assert_eq!(w["20"]["inputs"]["negative"], json!(["10", 1]));
+        assert_eq!(w["20"]["inputs"]["latent_image"], json!(["10", 2]));
+        assert!((w["20"]["inputs"]["denoise"].as_f64().unwrap() - 0.3).abs() < 1e-6);
+
+        r.strength = 0.9;
         let w = build(&r, Family::Sd15, Some("frame.png"));
         assert_eq!(w["8"]["class_type"], "VAEEncode");
         assert_eq!(w["9"], json!({"class_type": "SetLatentNoiseMask", "inputs": {"samples": ["8", 0], "mask": ["7", 1]}}));

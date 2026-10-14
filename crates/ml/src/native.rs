@@ -272,4 +272,53 @@ mod tests {
         let again = e.generate(&store, &r, &crate::NoProgress).unwrap();
         eprintln!("turbo, loaded: {} ms", again.elapsed_ms);
     }
+
+    /// Low strength keeps the frame, with and without a mask; full strength replaces it.
+    /// Writes `target/native-e2e-strength-*.png`.
+    #[test]
+    #[ignore = "needs real model files (PHOTOKA_MODELS_DIR with sd_turbo.safetensors)"]
+    fn real_low_strength_keeps_the_frame() {
+        let dir = std::env::var_os("PHOTOKA_MODELS_DIR").expect("set PHOTOKA_MODELS_DIR");
+        let store = ModelStore::new(PathBuf::from(dir));
+        let mut e = NativeEngine::new();
+        let mut r = req("sd_turbo.safetensors");
+        r.prompt = "a photo of a red fox in a snowy forest, detailed".into();
+        r.steps = 2;
+        r.cfg = 0.0;
+        r.sampler = Sampler::EulerA;
+        let base = e.generate(&store, &r, &crate::NoProgress).unwrap().image;
+        let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
+        let mut left = crate::image::Mask::new(512, 512).unwrap();
+        for y in 0..512usize {
+            left.data[y * 512..y * 512 + 256].fill(255);
+        }
+        // Mean absolute RGB difference from `base` over the left half.
+        let diff = |img: &crate::image::Rgba8| {
+            let (a, b) = (base.data.as_chunks::<4>().0, img.data.as_chunks::<4>().0);
+            let mut sum = 0.0;
+            for (i, (p, q)) in a.iter().zip(b).enumerate() {
+                if i % 512 < 256 {
+                    sum += (0..3).map(|c| (f64::from(p[c]) - f64::from(q[c])).abs()).sum::<f64>();
+                }
+            }
+            sum / (512.0 * 256.0 * 3.0)
+        };
+        let mut r2 = r.clone();
+        r2.prompt = "an oil painting of a blue whale".into();
+        r2.seed = 7;
+        r2.init = Some(base.clone());
+        let mut results = Vec::new();
+        for (name, strength, mask) in [("img2img-19", 0.19, None), ("inpaint-19", 0.19, Some(left.clone())), ("inpaint-100", 1.0, Some(left.clone()))] {
+            r2.strength = strength;
+            r2.mask = mask;
+            let out = e.generate(&store, &r2, &crate::NoProgress).unwrap().image;
+            std::fs::write(target.join(format!("native-e2e-strength-{name}.png")), out.to_png().unwrap()).unwrap();
+            let d = diff(&out);
+            eprintln!("{name}: mean difference {d:.1}");
+            results.push(d);
+        }
+        assert!(results[0] < 20.0, "19% image to image drifted too far: {}", results[0]);
+        assert!(results[1] < 20.0, "19% inpainting drifted too far: {}", results[1]);
+        assert!(results[2] > results[1] * 2.0, "full strength should replace the masked area: {results:?}");
+    }
 }

@@ -121,6 +121,25 @@ impl Schedule {
         s.push(0.0);
         s
     }
+
+    /// `σ` values for image to image at `strength` (1 = from pure noise, 0 = keep the image):
+    /// the last `steps` steps of a `steps / strength`-step schedule, as ComfyUI's `denoise`
+    /// does, so every requested step runs and strength isn't rounded to whole steps.
+    /// Strength 0 gives `[0]` (no steps).
+    pub fn img2img_sigmas(&self, kind: ScheduleKind, steps: usize, strength: f32) -> Vec<f64> {
+        let strength = f64::from(strength);
+        if !strength.is_finite() || strength >= 1.0 {
+            return self.sigmas(kind, steps);
+        }
+        if strength <= 0.0 {
+            return vec![0.0];
+        }
+        let steps = steps.clamp(1, TRAIN_STEPS);
+        let total = ((steps as f64 / strength).floor() as usize).clamp(steps, TRAIN_STEPS);
+        let all = self.sigmas(kind, total);
+        let from = all.len().saturating_sub(steps + 1);
+        all.get(from..).map(<[f64]>::to_vec).unwrap_or(all)
+    }
 }
 
 /// How steps are spaced over the training schedule.
@@ -198,13 +217,6 @@ pub fn step(sampler: Sampler, sigmas: &[f64], i: usize) -> StepCoeffs {
         }
         Sampler::Lcm => StepCoeffs { x: 0.0, denoised: 1.0, old: 0.0, noise: sn },
     }
-}
-
-/// First step index for img2img at `strength` (1 = from pure noise, 0 = keep the image).
-/// Always leaves at least one step.
-pub fn img2img_start(steps: usize, strength: f32) -> usize {
-    let keep = ((steps as f64) * f64::from(strength.clamp(0.0, 1.0))).round() as usize;
-    steps.saturating_sub(keep.max(1))
 }
 
 /// Deterministic standard-normal noise: same seed, same image on every run.
@@ -291,11 +303,36 @@ mod tests {
     }
 
     #[test]
-    fn img2img_start_and_noise() {
-        assert_eq!(img2img_start(20, 1.0), 0);
-        assert_eq!(img2img_start(20, 0.5), 10);
-        assert_eq!(img2img_start(20, 0.0), 19);
-        assert_eq!(img2img_start(20, f32::NAN), 19);
+    fn img2img_runs_every_step_from_the_strength_point() {
+        let s = Schedule::sd();
+        for kind in [ScheduleKind::Normal, ScheduleKind::Karras, ScheduleKind::DdimUniform, ScheduleKind::Trailing, ScheduleKind::Lcm] {
+            assert_eq!(s.img2img_sigmas(kind, 4, 1.0), s.sigmas(kind, 4));
+            assert_eq!(s.img2img_sigmas(kind, 4, f32::NAN), s.sigmas(kind, 4));
+            assert_eq!(s.img2img_sigmas(kind, 4, 0.0), vec![0.0]);
+            for strength in [0.05, 0.19, 0.5, 0.75] {
+                let sig = s.img2img_sigmas(kind, 4, strength);
+                assert_eq!(sig.len(), 5, "{kind:?} {strength}: {sig:?}");
+                assert_eq!(sig.last(), Some(&0.0));
+                assert!(sig.windows(2).all(|w| w[0] > w[1]), "{kind:?} {strength}: {sig:?}");
+                assert!(sig[0] < s.sigmas(kind, 4)[0], "{kind:?} {strength}: starts below pure noise");
+            }
+        }
+        // SD-Turbo at 2 steps and 19%: starts near timestep 199, not halfway (the old rounding).
+        let turbo = s.img2img_sigmas(ScheduleKind::Trailing, 2, 0.19);
+        assert_eq!(turbo.len(), 3);
+        assert!((s.timestep(turbo[0]) - 199.0).abs() < 1e-6, "{}", s.timestep(turbo[0]));
+        // 20 steps at 50%: starts around the middle of the training schedule.
+        let half = s.img2img_sigmas(ScheduleKind::Normal, 20, 0.5);
+        assert_eq!(half.len(), 21);
+        let t0 = s.timestep(half[0]);
+        assert!((450.0..550.0).contains(&t0), "{t0}");
+        // Lower strength starts lower.
+        let low = s.img2img_sigmas(ScheduleKind::Normal, 20, 0.2);
+        assert!(low[0] < half[0]);
+    }
+
+    #[test]
+    fn gaussian_noise_is_deterministic() {
         let a = gaussian(42, 10_001);
         assert_eq!(a, gaussian(42, 10_001));
         assert_ne!(a[..10], gaussian(43, 10)[..]);

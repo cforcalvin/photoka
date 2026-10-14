@@ -22,6 +22,9 @@ Apple silicon only. On an Intel Mac, the Generate panel explains why it's off.
      the frame's current pixels are the starting point (image to image).
    - With a mask, only the masked area changes (inpainting). Transparent pixels in the frame are
      added to the mask automatically, so dragging the frame past the canvas edge outpaints.
+   - **Strength** works in both cases: 100% replaces the pixels, and lower values keep more of
+     the original's shapes and colours (20–40% reworks it lightly). Every step you ask for
+     runs, so low strength works with few-step models like SD-Turbo too.
 5. The result is a new pixel layer named after the prompt, at the frame, with a layer mask when
    you inpainted. It's one undo step.
 
