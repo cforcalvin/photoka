@@ -62,7 +62,7 @@ fn new_client_id() -> String {
 /// which ComfyUI's `LoadImage` turns into its MASK output.
 pub fn frame_png(init: &Rgba8, mask: Option<&Mask>) -> Result<Vec<u8>> {
     let mut img = init.clone();
-    for (i, px) in img.data.chunks_exact_mut(4).enumerate() {
+    for (i, px) in img.data.as_chunks_mut::<4>().0.iter_mut().enumerate() {
         let m = mask.and_then(|m| m.data.get(i).copied()).unwrap_or(0);
         if let Some(a) = px.get_mut(3) {
             *a = 255 - m;
@@ -378,7 +378,7 @@ mod tests {
 
     fn png(w: u32, h: u32) -> Vec<u8> {
         let mut img = Rgba8::new(w, h).unwrap();
-        img.data.chunks_exact_mut(4).for_each(|p| p.copy_from_slice(&[200, 30, 30, 255]));
+        img.data.as_chunks_mut::<4>().0.iter_mut().for_each(|p| *p = [200, 30, 30, 255]);
         img.to_png().unwrap()
     }
 
@@ -606,8 +606,16 @@ mod tests {
         let out2 = server.client().generate(&store, &r2, &crate::NoProgress).unwrap();
         eprintln!("inpaint: {} ms", out2.elapsed_ms);
         std::fs::write(target.join("comfy-e2e-inpaint.png"), out2.image.to_png().unwrap()).unwrap();
-        let same_right =
-            out.image.data.chunks_exact(4).zip(out2.image.data.chunks_exact(4)).enumerate().filter(|(i, (a, b))| i % 512 > 300 && a[..3] == b[..3]).count();
+        let same_right = out
+            .image
+            .data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(out2.image.data.as_chunks::<4>().0)
+            .enumerate()
+            .filter(|(i, (a, b))| i % 512 > 300 && a[..3] == b[..3])
+            .count();
         eprintln!("unchanged right-side pixels: {same_right}");
     }
 

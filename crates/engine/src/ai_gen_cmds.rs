@@ -439,7 +439,7 @@ fn result_layer(doc: &Document, name: String, frame: Rect, img: &Rgba8, mask: Op
     let n = fmt.channels();
     let mut data = vec![0.0f32; img.data.len() / 4 * n];
     let mut enc = [0.0f32; 8];
-    for (px, dst) in img.data.chunks_exact(4).zip(data.chunks_exact_mut(n)) {
+    for (px, dst) in img.data.as_chunks::<4>().0.iter().zip(data.chunks_exact_mut(n)) {
         let c = |v: u8| {
             let f = f32::from(v) / 255.0;
             if linear { photoka_color::convert::srgb_to_linear(f) } else { f }
@@ -631,7 +631,7 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
             let _clear = PreviewGuard(Arc::clone(&slot));
             ctx.progress(0.0, "Reading the frame");
             let init = frame_pixels(&doc, frame, linear)?;
-            if init.data.chunks_exact(4).any(|px| px[3] > 0) {
+            if init.data.as_chunks::<4>().0.iter().any(|px| px[3] > 0) {
                 req.mask = photoka_ml::image::effective_mask(&init, user_mask.as_ref()).map_err(ml_err)?;
                 req.init = Some(init);
             }

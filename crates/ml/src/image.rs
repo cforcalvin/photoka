@@ -155,7 +155,7 @@ pub fn effective_mask(init: &Rgba8, user: Option<&Mask>) -> Result<Option<Mask>>
         Some(u) => u.clone(),
         None => Mask::new(init.width, init.height)?,
     };
-    for (v, px) in m.data.iter_mut().zip(init.data.chunks_exact(4)) {
+    for (v, px) in m.data.iter_mut().zip(init.data.as_chunks::<4>().0) {
         let empty = 255 - px[3];
         *v = (*v).max(empty);
     }

@@ -380,7 +380,7 @@ impl Loaded {
     fn image_tensor(&self, img: &Rgba8) -> Result<Tensor> {
         let (w, h) = (img.width as usize, img.height as usize);
         let mut planes = vec![0f32; 3 * w * h];
-        for (i, px) in img.data.chunks_exact(4).enumerate() {
+        for (i, px) in img.data.as_chunks::<4>().0.iter().enumerate() {
             for c in 0..3 {
                 if let (Some(dst), Some(&v)) = (planes.get_mut(c * w * h + i), px.get(c)) {
                     *dst = f32::from(v) / 127.5 - 1.0;
@@ -422,7 +422,7 @@ impl Loaded {
         }
         let v = acc.finish();
         let mut out = vec![255u8; w * h * 4];
-        for (i, px) in out.chunks_exact_mut(4).enumerate() {
+        for (i, px) in out.as_chunks_mut::<4>().0.iter_mut().enumerate() {
             for c in 0..3 {
                 if let (Some(d), Some(s)) = (px.get_mut(c), v.get(c * w * h + i)) {
                     *d = ((s * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
@@ -767,7 +767,7 @@ mod tests {
         };
         let l = Loaded::load(&super::super::resolve(&store, &req).unwrap(), &crate::NoProgress).unwrap();
         let mut img = Rgba8::new(512, 512).unwrap();
-        for (i, px) in img.data.chunks_exact_mut(4).enumerate() {
+        for (i, px) in img.data.as_chunks_mut::<4>().0.iter_mut().enumerate() {
             let (x, y) = (i % 512, i / 512);
             let sky = y < 300;
             px.copy_from_slice(&[
@@ -782,8 +782,10 @@ mod tests {
         let back = l.decode(&lat).unwrap();
         let err = back
             .data
-            .chunks_exact(4)
-            .zip(img.data.chunks_exact(4))
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(img.data.as_chunks::<4>().0)
             .map(|(a, b)| (0..3).map(|c| (f64::from(a[c]) - f64::from(b[c])).abs()).sum::<f64>())
             .sum::<f64>()
             / (512.0 * 512.0 * 3.0);

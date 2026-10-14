@@ -267,7 +267,7 @@ mod tests {
         eprintln!("turbo: {} ms", out.elapsed_ms);
         let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
         std::fs::write(target.join("native-e2e-turbo.png"), out.image.to_png().unwrap()).unwrap();
-        let mean = out.image.data.chunks_exact(4).map(|p| f64::from(p[0]) + f64::from(p[1]) + f64::from(p[2])).sum::<f64>() / (512.0 * 512.0 * 3.0);
+        let mean = out.image.data.as_chunks::<4>().0.iter().map(|p| f64::from(p[0]) + f64::from(p[1]) + f64::from(p[2])).sum::<f64>() / (512.0 * 512.0 * 3.0);
         assert!(mean > 10.0 && mean < 245.0, "a blank image (mean {mean})");
         let again = e.generate(&store, &r, &crate::NoProgress).unwrap();
         eprintln!("turbo, loaded: {} ms", again.elapsed_ms);
