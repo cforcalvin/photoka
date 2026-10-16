@@ -226,7 +226,9 @@ mod tests {
     fn bundled_catalog_is_valid_and_has_the_suggestions() {
         let c = Catalog::bundled().unwrap();
         assert_eq!(c.version, 1);
+        assert_eq!(c.models.first().map(|m| m.id.as_str()), Some("perfectdeliberate-v5"), "the suggested default comes first");
         for id in [
+            "perfectdeliberate-v5",
             "sd15",
             "cyberrealistic-revamp",
             "dreamshaper8",

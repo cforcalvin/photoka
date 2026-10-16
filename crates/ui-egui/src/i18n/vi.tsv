@@ -3601,3 +3601,9 @@ ai	Sampler	Bộ lấy mẫu
 	{used} used, {free} free	Đã dùng {used}, còn trống {free}
 	· inpainting the masked area	· tô lại vùng có mặt nạ
 	· whole frame	· toàn khung
+	Lock frame to view	Khóa khung theo khung nhìn
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Khung đứng yên trên màn hình trong khi bạn thu phóng và kéo ảnh bên dưới, và luôn tạo ảnh theo kích thước của khung
+	Zoom and pan the image under the frame	Thu phóng và kéo ảnh bên dưới khung
+	Zoom out to fit the frame	Thu nhỏ để vừa khung
+	Zoom in to fit the frame	Phóng to để vừa khung
+	{w} × {h} from {fw} × {fh} px	{w} × {h} từ {fw} × {fh} px

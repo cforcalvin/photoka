@@ -4077,3 +4077,9 @@ ai	Sampler	Campionatore
 	{used} used, {free} free	{used} usati, {free} liberi
 	· inpainting the masked area	· rigenerazione dell'area mascherata
 	· whole frame	· intera cornice
+	Lock frame to view	Blocca cornice sulla vista
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	La cornice resta ferma sullo schermo mentre ingrandisci e sposti l'immagine sotto di essa, e genera sempre alla sua dimensione
+	Zoom and pan the image under the frame	Ingrandisci e sposta l'immagine sotto la cornice
+	Zoom out to fit the frame	Riduci lo zoom per adattare la cornice
+	Zoom in to fit the frame	Aumenta lo zoom per adattare la cornice
+	{w} × {h} from {fw} × {fh} px	{w} × {h} da {fw} × {fh} px

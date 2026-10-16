@@ -4033,3 +4033,9 @@ ai	Sampler	Mintavételező
 	{used} used, {free} free	{used} foglalt, {free} szabad
 	· inpainting the masked area	· a maszkolt terület újrafestése
 	· whole frame	· teljes keret
+	Lock frame to view	Keret rögzítése a nézethez
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	A keret a képernyőn a helyén marad, miközben alatta nagyítod és mozgatod a képet, és mindig a saját méretében generál
+	Zoom and pan the image under the frame	A kép nagyítása és mozgatása a keret alatt
+	Zoom out to fit the frame	Kicsinyíts, hogy a keret elférjen
+	Zoom in to fit the frame	Nagyíts, hogy a keret elférjen
+	{w} × {h} from {fw} × {fh} px	{w} × {h} ebből: {fw} × {fh} px

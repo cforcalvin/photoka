@@ -3846,3 +3846,9 @@ ai	Sampler	Örnekleyici
 	{used} used, {free} free	{used} kullanılıyor, {free} boş
 	· inpainting the masked area	· maskeli alan yeniden üretiliyor
 	· whole frame	· tüm çerçeve
+	Lock frame to view	Çerçeveyi görünüme kilitle
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Çerçeve ekranda sabit kalır, altındaki görüntüyü yakınlaştırıp kaydırırsınız; her zaman kendi boyutunda üretir
+	Zoom and pan the image under the frame	Çerçevenin altındaki görüntüyü yakınlaştır ve kaydır
+	Zoom out to fit the frame	Çerçevenin sığması için uzaklaştırın
+	Zoom in to fit the frame	Çerçevenin sığması için yakınlaştırın
+	{w} × {h} from {fw} × {fh} px	{fw} × {fh} px'den {w} × {h}

@@ -8,9 +8,10 @@ with those files and `SHA256SUMS.txt`. Nobody sees a draft until a maintainer pu
 User-facing names say **Photoka**. Files, binaries and ids stay lowercase
 (`photoka-<version>-macos-universal.dmg`, `io.github.cforcalvin.photoka`).
 
-**Signing:** releases are currently ad-hoc signed and not notarized, because Photoka has no Apple
-Developer ID certificate yet. macOS asks users to confirm the first launch. `package.sh` already
-signs and notarizes when given an identity and notarization credentials (see Secrets below).
+**Signing:** local and CI builds can be Developer ID signed and notarized when credentials are
+present (see Secrets below). Without them, `package.sh` ad-hoc signs and skips notarization.
+Locally, a notarytool keychain profile (`MACOS_NOTARY_PROFILE`, e.g. `Photoka`) is enough; CI
+uses the certificate and Apple ID secrets.
 
 ## Cutting a release
 
@@ -102,11 +103,14 @@ open dist/release/photoka-*-macos-*.dmg
 
 ## Secrets
 
-None are needed today. To ship signed and notarized builds, add these to a `release`
-environment (*Settings → Environments → release*, deployment branches restricted to `release`),
-give the `macos` job `environment: release`, and add a step before packaging that runs
-`packaging/macos/import-cert.sh` with the certificate secrets and passes the Apple ID secrets to
-`package.sh`:
+**Local notarization:** set `MACOS_SIGN_IDENTITY` to your Developer ID Application identity and
+`MACOS_NOTARY_PROFILE` to a profile from `xcrun notarytool store-credentials` (e.g. `Photoka`),
+then run `packaging/macos/package.sh`.
+
+**CI:** add these to a `release` environment (*Settings → Environments → release*, deployment
+branches restricted to `release`), give the `macos` job `environment: release`, and add a step
+before packaging that runs `packaging/macos/import-cert.sh` with the certificate secrets and
+passes the Apple ID secrets to `package.sh`:
 
 | Secret | Used for |
 |---|---|
@@ -126,9 +130,9 @@ Delete the keychain at the end of the job.
 
 ## Icons
 
-`assets/app-icon/photoka.svg` is the canonical icon: the upstream owner's ArtCraft drawing of a
-nine-tailed kitsune, vectorised (MIT OR Apache-2.0, see `LICENSE.txt` there; palette and
-geometry in `README.md`). `packaging/icons.sh` regenerates the 1024 px PNG, the `.icns` and the
+`assets/app-icon/photoka.svg` is the canonical icon: the maintainer's artwork of a white sprite
+on a dandelion, embedded as a raster in a 512-unit rounded tile (MIT OR Apache-2.0, see
+`LICENSE.txt` there; geometry in `README.md`). `packaging/icons.sh` regenerates the 1024 px PNG, the `.icns` and the
 hicolor PNGs (in-app branding) from it. It needs `resvg` and `iconutil`. The outputs are
 committed, so packaging never needs those tools.
 

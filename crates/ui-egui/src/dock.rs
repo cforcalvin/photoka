@@ -36,7 +36,7 @@ pub enum Group {
     Navigator,
     /// History | Actions | Layer Comps.
     History,
-    /// Layers | Channels | Paths.
+    /// Layers | Channels | Paths | Generate.
     Layers,
 }
 
@@ -107,7 +107,8 @@ impl Group {
             Group::Character => &["Character", "Paragraph"],
             Group::Navigator => &["Navigator", "Histogram", "Info"],
             Group::History => &["History", "Actions", "Layer Comps"],
-            Group::Layers => &["Layers", "Channels", "Paths"],
+            // Generate is Photoka's (offline image generation).
+            Group::Layers => &["Layers", "Channels", "Paths", "Generate"],
         }
     }
 

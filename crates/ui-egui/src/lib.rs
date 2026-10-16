@@ -1712,7 +1712,6 @@ impl eframe::App for PhotokaApp {
         type_panels_ui::windows(self, &ctx);
         analysis_ui::windows(self, &ctx);
         timeline_ui::windows(self, &ctx);
-        generate_ui::windows(self, &ctx);
         model_manager_ui::windows(self, &ctx);
         workspace_ui::windows(self, &ctx);
         palette::show(self, &ctx);

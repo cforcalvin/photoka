@@ -3904,3 +3904,9 @@ ai	Sampler	Amostrador
 	{used} used, {free} free	{used} usados, {free} livres
 	· inpainting the masked area	· regenerando a área mascarada
 	· whole frame	· quadro inteiro
+	Lock frame to view	Travar quadro na visualização
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	O quadro fica parado na tela enquanto você aplica zoom e move a imagem por baixo dele, e sempre gera no tamanho dele
+	Zoom and pan the image under the frame	Aplicar zoom e mover a imagem sob o quadro
+	Zoom out to fit the frame	Diminua o zoom para caber o quadro
+	Zoom in to fit the frame	Aumente o zoom para caber o quadro
+	{w} × {h} from {fw} × {fh} px	{w} × {h} a partir de {fw} × {fh} px

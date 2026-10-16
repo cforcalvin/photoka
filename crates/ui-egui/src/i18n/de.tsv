@@ -2762,3 +2762,9 @@ ai	Sampler	Sampler
 	{used} used, {free} free	{used} belegt, {free} frei
 	· inpainting the masked area	· maskierter Bereich wird neu gemalt
 	· whole frame	· ganzer Rahmen
+	Lock frame to view	Rahmen an Ansicht fixieren
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Der Rahmen bleibt auf dem Bildschirm stehen, während Sie das Bild darunter zoomen und verschieben, und generiert immer in seiner Größe
+	Zoom and pan the image under the frame	Bild unter dem Rahmen zoomen und verschieben
+	Zoom out to fit the frame	Herauszoomen, damit der Rahmen passt
+	Zoom in to fit the frame	Hineinzoomen, damit der Rahmen passt
+	{w} × {h} from {fw} × {fh} px	{w} × {h} aus {fw} × {fh} px

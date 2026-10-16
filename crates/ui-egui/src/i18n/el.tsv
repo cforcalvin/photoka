@@ -3812,3 +3812,9 @@ ai	Sampler	Δειγματολήπτης
 	{used} used, {free} free	{used} σε χρήση, {free} ελεύθερα
 	· inpainting the masked area	· αναδημιουργία της περιοχής με μάσκα
 	· whole frame	· ολόκληρο το πλαίσιο
+	Lock frame to view	Κλείδωμα πλαισίου στην προβολή
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Το πλαίσιο μένει σταθερό στην οθόνη ενώ κάνετε ζουμ και μετακινείτε την εικόνα από κάτω, και δημιουργεί πάντα στο μέγεθός του
+	Zoom and pan the image under the frame	Ζουμ και μετακίνηση της εικόνας κάτω από το πλαίσιο
+	Zoom out to fit the frame	Σμίκρυνση για να χωρέσει το πλαίσιο
+	Zoom in to fit the frame	Μεγέθυνση για να χωρέσει το πλαίσιο
+	{w} × {h} from {fw} × {fh} px	{w} × {h} από {fw} × {fh} px

@@ -28,7 +28,7 @@ VOLUME = "Photoka"
 WIDTH, HEIGHT = 660, 400  # window content, pt; the background's 1x size
 TITLE_BAR = 32
 ICON_SIZE = 128
-PALETTE = 16  # colours in background.tiff
+PALETTE = 256  # colours in background.tiff
 ICONS = {"Photoka.app": (326, 205), "Applications": (574, 205)}
 # A fixed date for the alias and the colour profile. Finder never matches it against the image
 # (each build is a new volume): it finds the background by volume name and path.
@@ -48,7 +48,7 @@ def render(svg, width, out):
 
 def quantize(im):
     # No dithering: dither noise compresses badly and the artwork has flat fills.
-    return im.quantize(PALETTE, method=Image.Quantize.FASTOCTREE, dither=Image.Dither.NONE)
+    return im.quantize(PALETTE, method=Image.Quantize.MEDIANCUT, dither=Image.Dither.NONE)
 
 
 def srgb_profile():
@@ -68,8 +68,8 @@ def write_tiff(svg, out):
             quantize(render(svg, WIDTH * s, os.path.join(tmp, f"{s}x.png"))) for s in (1, 2)
         )
     two.encoderinfo = {"dpi": (144, 144)}  # the rest as the first page
-    # Opaque 16-colour palette, Deflate: the artwork is three inks plus antialiasing, and a palette
-    # keeps the file under ~90 KB (RGB was ~200 KB; repository assets must stay small).
+    # Opaque 256-colour palette, Deflate: enough for the icon's soft shading, and a palette keeps
+    # the file small (repository assets must stay small).
     one.save(
         out,
         "TIFF",

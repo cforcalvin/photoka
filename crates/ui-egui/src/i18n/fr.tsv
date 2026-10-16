@@ -3122,3 +3122,9 @@ ai	Sampler	Échantillonneur
 	{used} used, {free} free	{used} utilisés, {free} libres
 	· inpainting the masked area	· régénération de la zone masquée
 	· whole frame	· cadre entier
+	Lock frame to view	Verrouiller le cadre sur la vue
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Le cadre reste fixe à l'écran pendant que vous zoomez et déplacez l'image en dessous, et génère toujours à sa taille
+	Zoom and pan the image under the frame	Zoomer et déplacer l'image sous le cadre
+	Zoom out to fit the frame	Dézoomez pour ajuster le cadre
+	Zoom in to fit the frame	Zoomez pour ajuster le cadre
+	{w} × {h} from {fw} × {fh} px	{w} × {h} depuis {fw} × {fh} px

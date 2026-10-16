@@ -3727,3 +3727,9 @@ ai	Sampler	サンプラー
 	{used} used, {free} free	{used} 使用中、空き {free}
 	· inpainting the masked area	· マスク範囲をインペイント
 	· whole frame	· フレーム全体
+	Lock frame to view	フレームを表示に固定
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	フレームは画面上で固定され、その下の画像をズーム・パンできます。生成は常にフレームのサイズで行われます
+	Zoom and pan the image under the frame	フレームの下の画像をズーム・パン
+	Zoom out to fit the frame	フレームが収まるようズームアウトしてください
+	Zoom in to fit the frame	フレームが収まるようズームインしてください
+	{w} × {h} from {fw} × {fh} px	{fw} × {fh} px から {w} × {h}

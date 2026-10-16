@@ -8,6 +8,25 @@
 
 version = 1
 
+# Listed first: the suggested default model.
+[[model]]
+id = "perfectdeliberate-v5"
+name = "PerfectDeliberate v5"
+description = "Recommended. Versatile SD 1.5 model for realistic and artistic images (v5, pruned fp16)."
+kind = "checkpoint"
+family = "sd15"
+tags = ["recommended", "general", "photoreal"]
+source = "huggingface"
+# The exact file Civitai serves as the v5 SD 1.5 pruned fp16 (model version 253055, file 197009).
+url = "https://huggingface.co/digiplay/PerfectDeliberate_v5/resolve/main/perfectdeliberate_v5.safetensors"
+page = "https://civitai.com/models/24350/perfectdeliberate?modelVersionId=253055"
+file_name = "perfectdeliberate_v5SD15_pruned_fp16.safetensors"
+size = 2400040924
+sha256 = "117d831558a7ffaa55c30c04a38cbe0e89423d84d12d23910435c1d1c693fd14"
+license = "CreativeML OpenRAIL-M (with the author's Civitai permissions)"
+license_url = "https://civitai.com/models/24350/perfectdeliberate"
+defaults = { steps = 12, cfg = 7.0, sampler = "dpmpp_2m_karras" }
+
 [[model]]
 id = "sd15"
 name = "Stable Diffusion 1.5"

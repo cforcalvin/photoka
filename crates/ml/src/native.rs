@@ -19,6 +19,8 @@ use crate::{MlError, Progress, Result};
 
 #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
 mod imp;
+#[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+mod vae;
 
 /// Largest frame side the built-in engine generates (SD 1.5 and SD-Turbo degrade well before).
 pub const MAX_NATIVE_SIDE: u32 = 1024;
@@ -181,6 +183,19 @@ mod tests {
         }
     }
 
+    /// The last generation's stage timings, for the real-model tests' output.
+    fn stages(e: &NativeEngine) -> String {
+        #[cfg(all(target_os = "macos", target_arch = "aarch64"))]
+        {
+            format!("{:?}", e.loaded.as_ref().map(|l| l.timings()))
+        }
+        #[cfg(not(all(target_os = "macos", target_arch = "aarch64")))]
+        {
+            let _ = e;
+            String::new()
+        }
+    }
+
     #[test]
     fn missing_files_and_limits_are_errors() {
         let dir = std::env::temp_dir().join(format!("photoka-native-{}", std::process::id()));
@@ -220,7 +235,7 @@ mod tests {
         r.steps = 20;
         r.sampler = Sampler::Dpmpp2mKarras;
         let out = e.generate(&store, &r, &Print).unwrap();
-        eprintln!("txt2img: {} ms", out.elapsed_ms);
+        eprintln!("txt2img: {} ms {}", out.elapsed_ms, stages(&e));
         let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
         std::fs::write(target.join("native-e2e-txt2img.png"), out.image.to_png().unwrap()).unwrap();
         // Inpaint the left half of that image with latent blending.
@@ -235,7 +250,7 @@ mod tests {
         r2.init = Some(out.image.clone());
         r2.mask = Some(mask);
         let out2 = e.generate(&store, &r2, &Print).unwrap();
-        eprintln!("inpaint: {} ms", out2.elapsed_ms);
+        eprintln!("inpaint: {} ms {}", out2.elapsed_ms, stages(&e));
         std::fs::write(target.join("native-e2e-inpaint.png"), out2.image.to_png().unwrap()).unwrap();
         // LCM-LoRA, 6 steps.
         if store.is_installed(ModelKind::Lora, "lcm-lora-sdv1-5.safetensors") {
@@ -245,7 +260,7 @@ mod tests {
             r3.steps = 6;
             r3.cfg = 1.5;
             let out3 = e.generate(&store, &r3, &Print).unwrap();
-            eprintln!("lcm: {} ms", out3.elapsed_ms);
+            eprintln!("lcm: {} ms {}", out3.elapsed_ms, stages(&e));
             std::fs::write(target.join("native-e2e-lcm.png"), out3.image.to_png().unwrap()).unwrap();
         }
     }
@@ -264,13 +279,13 @@ mod tests {
         r.cfg = 0.0;
         r.sampler = Sampler::EulerA;
         let out = e.generate(&store, &r, &crate::NoProgress).unwrap();
-        eprintln!("turbo: {} ms", out.elapsed_ms);
+        eprintln!("turbo: {} ms {}", out.elapsed_ms, stages(&e));
         let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
         std::fs::write(target.join("native-e2e-turbo.png"), out.image.to_png().unwrap()).unwrap();
         let mean = out.image.data.as_chunks::<4>().0.iter().map(|p| f64::from(p[0]) + f64::from(p[1]) + f64::from(p[2])).sum::<f64>() / (512.0 * 512.0 * 3.0);
         assert!(mean > 10.0 && mean < 245.0, "a blank image (mean {mean})");
         let again = e.generate(&store, &r, &crate::NoProgress).unwrap();
-        eprintln!("turbo, loaded: {} ms", again.elapsed_ms);
+        eprintln!("turbo, loaded: {} ms {}", again.elapsed_ms, stages(&e));
     }
 
     /// Low strength keeps the frame, with and without a mask; full strength replaces it.

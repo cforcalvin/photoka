@@ -10,9 +10,14 @@
 #   MACOS_SIGN_IDENTITY   codesign identity (name or SHA-1). Default "-" = ad-hoc (local testing;
 #                         Gatekeeper will reject the result on other Macs). In CI, import-cert.sh sets it.
 #   MACOS_KEYCHAIN        keychain holding the identity (optional)
-# Notarization (env; all three needed, and a real identity):
+# Notarization (env; a real identity, plus either a keychain profile or the three Apple ID vars):
+#   MACOS_NOTARY_PROFILE  name from `xcrun notarytool store-credentials` (preferred locally)
 #   APPLE_ID, APPLE_PASSWORD (app-specific password), APPLE_TEAM_ID
 set -euo pipefail
+# On exFAT (and other non-HFS volumes) macOS writes AppleDouble `._*` sidecars next to every
+# copied file. codesign treats those as nested Mach-O and fails; stop creating them, and strip
+# any that already exist before signing.
+export COPYFILE_DISABLE=1
 # shellcheck source=../env.sh
 . "$(dirname "${BASH_SOURCE[0]}")/../env.sh"
 HERE="$ROOT/packaging/macos"
@@ -39,20 +44,26 @@ export MACOSX_DEPLOYMENT_TARGET=11.0
 IDENTITY="${MACOS_SIGN_IDENTITY:--}"
 SHORT_VERSION="${VERSION%%-*}"
 WORK="$CARGO_TARGET_DIR/macos-package"
-APP="$WORK/Photoka.app"
+# Assemble and sign on the boot volume. CARGO_TARGET_DIR may be on exFAT (no xattrs), and
+# codesign then spills AppleDouble `._*` files that break `codesign --verify --strict`.
+STAGE_ROOT="$(mktemp -d "${TMPDIR:-/tmp}/photoka-macos.XXXXXX")"
+trap 'rm -rf "$STAGE_ROOT"' EXIT
+APP="$STAGE_ROOT/Photoka.app"
 DMG="$DIST/photoka-$VERSION-macos-$ARCH.dmg"
 CLI_ZIP="$DIST/photoka-cli-$VERSION-macos-$ARCH.zip"
 
 NOTARIZE=0
 if [ "$IDENTITY" = "-" ]; then
   warn "macOS: ad-hoc signing (no MACOS_SIGN_IDENTITY); artifacts are not notarized"
+elif [ -n "${MACOS_NOTARY_PROFILE:-}" ]; then
+  NOTARIZE=1
 elif [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
   NOTARIZE=1
 else
-  warn "macOS: APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID incomplete; signed but not notarized"
+  warn "macOS: set MACOS_NOTARY_PROFILE, or APPLE_ID / APPLE_PASSWORD / APPLE_TEAM_ID; signed but not notarized"
 fi
 
-echo "==> Photoka $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $NOTARIZE"
+echo "==> Photoka $VERSION for macOS ($ARCH), identity: $IDENTITY, notarize: $NOTARIZE${MACOS_NOTARY_PROFILE:+ (profile $MACOS_NOTARY_PROFILE)}"
 
 # ---- build -------------------------------------------------------------------------------------
 if [ "$SKIP_BUILD" = 0 ]; then
@@ -82,15 +93,20 @@ sign() {
 
 notarize() {
   local file="$1" out id status
+  local creds=()
+  if [ -n "${MACOS_NOTARY_PROFILE:-}" ]; then
+    creds=(--keychain-profile "$MACOS_NOTARY_PROFILE")
+  else
+    creds=(--apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID")
+  fi
   echo "==> notarizing $(basename "$file") (this can take a few minutes)"
-  out="$(xcrun notarytool submit "$file" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" \
-    --team-id "$APPLE_TEAM_ID" --wait --timeout 1h --output-format json)" || true
+  out="$(xcrun notarytool submit "$file" "${creds[@]}" --wait --timeout 1h --output-format json)" || true
   echo "$out"
   id="$(printf '%s' "$out" | plutil -extract id raw -o - - 2>/dev/null || true)"
   status="$(printf '%s' "$out" | plutil -extract status raw -o - - 2>/dev/null || true)"
   if [ "$status" != "Accepted" ]; then
     if [ -n "$id" ]; then
-      xcrun notarytool log "$id" --apple-id "$APPLE_ID" --password "$APPLE_PASSWORD" --team-id "$APPLE_TEAM_ID" || true
+      xcrun notarytool log "$id" "${creds[@]}" || true
     fi
     echo "error: notarization of $(basename "$file") failed (status: ${status:-unknown})" >&2
     exit 1
@@ -130,7 +146,7 @@ fi
 
 # ---- DMG ---------------------------------------------------------------------------------------
 echo "==> building $DMG"
-STAGE="$WORK/dmg"
+STAGE="$STAGE_ROOT/dmg"
 mkdir -p "$STAGE"
 ditto "$APP" "$STAGE/Photoka.app"
 ln -s /Applications "$STAGE/Applications"
@@ -138,13 +154,20 @@ ln -s /Applications "$STAGE/Applications"
 mkdir -p "$STAGE/.background"
 cp "$HERE/dmg/background.tiff" "$STAGE/.background/background.tiff"
 cp "$HERE/dmg/dmg-layout.DS_Store" "$STAGE/.DS_Store"
-rm -f "$DMG" "$WORK/raw.dmg"
-# makehybrid + convert builds the image without attaching a device, unlike `create -srcfolder`,
-# which is flaky on CI runners ("Resource busy") and hangs in sandboxed sessions.
+rm -f "$DMG" "$STAGE_ROOT/raw.dmg"
 # The volume name has no version: .DS_Store finds the background through an alias that includes it.
-hdiutil makehybrid -hfs -hfs-volume-name "Photoka" -hfs-openfolder "$STAGE" -o "$WORK/raw.dmg" "$STAGE"
-hdiutil convert "$WORK/raw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG"
-rm -f "$WORK/raw.dmg"
+# `create -srcfolder` copies files as they are. `makehybrid -hfs` stamps com.apple.FinderInfo on
+# every file, which survives the drag to /Applications and makes the installed app fail
+# `codesign --verify --strict` and Gatekeeper; it is only the fallback for runners where
+# `create -srcfolder` fails ("Resource busy", sandboxed sessions).
+if ! hdiutil create -volname "Photoka" -srcfolder "$STAGE" -fs HFS+ -format UDZO \
+  -imagekey zlib-level=9 -o "$DMG"; then
+  echo "warning: hdiutil create failed; falling back to makehybrid (installed app will carry FinderInfo)" >&2
+  rm -f "$DMG"
+  hdiutil makehybrid -hfs -hfs-volume-name "Photoka" -hfs-openfolder "$STAGE" -o "$STAGE_ROOT/raw.dmg" "$STAGE"
+  hdiutil convert "$STAGE_ROOT/raw.dmg" -format UDZO -imagekey zlib-level=9 -o "$DMG"
+  rm -f "$STAGE_ROOT/raw.dmg"
+fi
 sign "$DMG"
 codesign --verify --strict --verbose=2 "$DMG"
 if [ "$NOTARIZE" = 1 ]; then
@@ -156,7 +179,7 @@ fi
 
 # ---- CLI ---------------------------------------------------------------------------------------
 echo "==> building $CLI_ZIP"
-CLI_DIR="$WORK/photoka-cli-$VERSION-macos-$ARCH"
+CLI_DIR="$STAGE_ROOT/photoka-cli-$VERSION-macos-$ARCH"
 mkdir -p "$CLI_DIR"
 cp "$WORK/bin/photoka-cli" "$CLI_DIR/"
 copy_docs "$CLI_DIR"

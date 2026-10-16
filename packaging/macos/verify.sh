@@ -41,9 +41,11 @@ DMG="$DIST/photoka-$VERSION-macos-$ARCH.dmg"
 CLI_ZIP="$DIST/photoka-cli-$VERSION-macos-$ARCH.zip"
 IDENTITY="${MACOS_SIGN_IDENTITY:--}"
 STRICT=0
-if [ "$IDENTITY" != "-" ] && [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; then
+if [ "$IDENTITY" != "-" ] && { [ -n "${MACOS_NOTARY_PROFILE:-}" ] || { [ -n "${APPLE_ID:-}" ] && [ -n "${APPLE_PASSWORD:-}" ] && [ -n "${APPLE_TEAM_ID:-}" ]; }; }; then
   STRICT=1
 fi
+# Team id for codesign detail checks; fall back to the known Photoka Developer ID team.
+APPLE_TEAM_ID="${APPLE_TEAM_ID:-GSLU4J8LYR}"
 
 FAILED=0
 fail() {

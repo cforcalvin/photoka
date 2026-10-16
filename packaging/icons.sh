@@ -33,8 +33,7 @@ for s in 16 24 32 48 64 128 256 512; do
   render "$TIGHT" "$s" "$DIR/hicolor/${s}x${s}/apps/io.github.cforcalvin.photoka.png"
 done
 mkdir -p "$DIR/hicolor/scalable/apps"
-# The lighter trace (photoka-small.svg) keeps the scalable theme icon cheap to render.
-cp "$DIR/photoka-small.svg" "$DIR/hicolor/scalable/apps/io.github.cforcalvin.photoka.svg"
+cp "$SVG" "$DIR/hicolor/scalable/apps/io.github.cforcalvin.photoka.svg"
 
 # macOS .icns.
 if command -v iconutil >/dev/null; then

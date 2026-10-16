@@ -3109,3 +3109,9 @@ ai	Sampler	Sampler
 	{used} used, {free} free	{used} terpakai, {free} kosong
 	· inpainting the masked area	· mengisi ulang area bermasker
 	· whole frame	· seluruh bingkai
+	Lock frame to view	Kunci bingkai ke tampilan
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Bingkai tetap di tempatnya di layar saat Anda memperbesar dan menggeser gambar di bawahnya, dan selalu menghasilkan pada ukurannya
+	Zoom and pan the image under the frame	Perbesar dan geser gambar di bawah bingkai
+	Zoom out to fit the frame	Perkecil agar bingkai muat
+	Zoom in to fit the frame	Perbesar agar bingkai muat
+	{w} × {h} from {fw} × {fh} px	{w} × {h} dari {fw} × {fh} px

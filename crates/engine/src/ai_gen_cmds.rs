@@ -9,14 +9,19 @@
 //! pixels is image-to-image at `strength`; a mask (painted, or the frame's transparent pixels
 //! for outpainting) inpaints. The result lands as a new layer at the frame, with a layer mask
 //! from the feathered inpaint mask, in one undo step. The model stays loaded between runs.
+//!
+//! A frame can also generate at its own size, apart from the document pixels it covers (the
+//! Generate Frame tool's "Lock frame to view"): the pixels under it are resampled to the
+//! generation size and the result back to the frame. A result with more pixels than the frame
+//! lands as a smart object that keeps every generated pixel, scaled down to fit.
 
 use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex, PoisonError};
 
 use photoka_color::PixelFormat;
-use photoka_doc::{DocId, Document, Layer, LayerMask};
-use photoka_geom::Rect;
+use photoka_doc::{DocId, Document, Layer, LayerContent, LayerMask, SmartObject, SmartSource};
+use photoka_geom::{Affine, Rect};
 use photoka_ml::image::{Mask, Rgba8};
 use photoka_ml::native::NativeEngine;
 use photoka_ml::params::{EngineKind, GenerateRequest, LoraRef, MAX_LORAS, Sampler};
@@ -34,6 +39,9 @@ pub const DEFAULT_SIDE: u32 = 512;
 pub const SNAP: u32 = 64;
 pub const MIN_SIDE: u32 = 64;
 pub const MAX_SIDE: u32 = photoka_ml::image::MAX_SIDE;
+/// Document sides of a frame with its own generation size (they don't snap).
+pub const MIN_FRAME_SIDE: u32 = 8;
+pub const MAX_FRAME_SIDE: u32 = 4096;
 /// Coordinates further out than this are rejected.
 const MAX_COORD: f64 = 1_000_000.0;
 /// Largest mask plane, in pixels.
@@ -130,6 +138,8 @@ impl MaskPlane {
 #[derive(Clone, Debug, Default)]
 struct DocGen {
     frame: Option<Rect>,
+    /// The generation size, when it isn't the frame's own.
+    gen_size: Option<(u32, u32)>,
     mask: Option<MaskPlane>,
 }
 
@@ -151,6 +161,8 @@ pub struct GenState {
     preview: Arc<Mutex<Option<Preview>>>,
     /// Increments whenever a frame or mask changes (for UI caches).
     revision: u64,
+    /// Increments whenever a mask changes.
+    mask_revision: u64,
 }
 
 impl GenState {
@@ -187,6 +199,14 @@ impl GenState {
         self.docs.get(&doc.id).and_then(|g| g.frame).unwrap_or_else(|| default_frame(doc))
     }
 
+    /// The size the document's frame generates at (its own size unless set apart).
+    pub fn gen_size_for(&self, doc: &Document) -> (u32, u32) {
+        self.docs.get(&doc.id).and_then(|g| g.gen_size).unwrap_or_else(|| {
+            let f = self.frame_for(doc);
+            (f.width(), f.height())
+        })
+    }
+
     pub fn mask_for(&self, doc: DocId) -> Option<&MaskPlane> {
         self.docs.get(&doc).and_then(|g| g.mask.as_ref())
     }
@@ -199,9 +219,19 @@ impl GenState {
         self.revision
     }
 
+    pub fn mask_revision(&self) -> u64 {
+        self.mask_revision
+    }
+
     fn doc_mut(&mut self, id: DocId) -> &mut DocGen {
         self.revision = self.revision.wrapping_add(1);
         self.docs.entry(id).or_default()
+    }
+
+    /// [`Self::doc_mut`] for a change to the mask.
+    fn mask_mut(&mut self, id: DocId) -> &mut DocGen {
+        self.mask_revision = self.mask_revision.wrapping_add(1);
+        self.doc_mut(id)
     }
 }
 
@@ -241,7 +271,12 @@ fn frame_json(s: &Session, doc: &Document) -> Value {
     let f = s.ai.generate.frame_for(doc);
     let mask = s.ai.generate.mask_for(doc.id).and_then(|m| m.crop(f));
     let coverage = mask.as_ref().map_or(0.0, |m| m.data.iter().filter(|&&v| v >= 128).count() as f64 / m.data.len().max(1) as f64);
-    json!({"x": f.x0, "y": f.y0, "width": f.width(), "height": f.height(), "masked": mask.is_some(), "maskCoverage": coverage})
+    let (gw, gh) = s.ai.generate.gen_size_for(doc);
+    json!({"x": f.x0, "y": f.y0, "width": f.width(), "height": f.height(), "genWidth": gw, "genHeight": gh, "masked": mask.is_some(), "maskCoverage": coverage})
+}
+
+fn free_side(v: f64) -> u32 {
+    v.round().clamp(f64::from(MIN_FRAME_SIDE), f64::from(MAX_FRAME_SIDE)) as u32
 }
 
 fn frame_get(s: &mut Session, _: &Value) -> Result<Value> {
@@ -253,17 +288,33 @@ fn frame_set(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "ai.frame.set";
     let doc = active_doc(s)?;
     let cur = s.ai.generate.frame_for(&doc);
+    let cur_gen = s.ai.generate.docs.get(&doc.id).and_then(|g| g.gen_size);
     let x = num(CMD, p, "x")?.map_or(cur.x0, |v| v.round() as i32);
     let y = num(CMD, p, "y")?.map_or(cur.y0, |v| v.round() as i32);
-    let w = num(CMD, p, "width")?.map_or(cur.width(), snap_side);
-    let h = num(CMD, p, "height")?.map_or(cur.height(), snap_side);
-    s.ai.generate.doc_mut(doc.id).frame = Some(Rect::from_xywh(x, y, w, h));
+    let (width, height) = (num(CMD, p, "width")?, num(CMD, p, "height")?);
+    let (gen_w, gen_h) = (num(CMD, p, "genWidth")?, num(CMD, p, "genHeight")?);
+    let (w, h, gen_size) = if gen_w.is_some() || gen_h.is_some() {
+        // Its own generation size: the document sides are free.
+        let (cw, ch) = s.ai.generate.gen_size_for(&doc);
+        let size = (gen_w.map_or(cw, snap_side), gen_h.map_or(ch, snap_side));
+        (width.map_or(cur.width(), free_side), height.map_or(cur.height(), free_side), Some(size))
+    } else if width.is_some() || height.is_some() {
+        (width.map_or(cur.width(), snap_side), height.map_or(cur.height(), snap_side), None)
+    } else {
+        // Only a move: the sizes stay.
+        (cur.width(), cur.height(), cur_gen)
+    };
+    let g = s.ai.generate.doc_mut(doc.id);
+    g.frame = Some(Rect::from_xywh(x, y, w, h));
+    g.gen_size = gen_size;
     Ok(frame_json(s, &doc))
 }
 
 fn frame_reset(s: &mut Session, _: &Value) -> Result<Value> {
     let doc = active_doc(s)?;
-    s.ai.generate.doc_mut(doc.id).frame = None;
+    let g = s.ai.generate.doc_mut(doc.id);
+    g.frame = None;
+    g.gen_size = None;
     Ok(frame_json(s, &doc))
 }
 
@@ -315,7 +366,7 @@ fn mask_stroke(s: &mut Session, p: &Value) -> Result<Value> {
     if work > 1e9 {
         return Err(bad(CMD, "the stroke is too long for its brush size; split it into shorter strokes"));
     }
-    let g = s.ai.generate.doc_mut(doc.id);
+    let g = s.ai.generate.mask_mut(doc.id);
     let mut plane = match &g.mask {
         Some(m) => m.grown(area)?,
         None => MaskPlane::blank(area)?,
@@ -360,7 +411,7 @@ fn mask_stroke(s: &mut Session, p: &Value) -> Result<Value> {
 fn mask_fill(s: &mut Session, _: &Value) -> Result<Value> {
     let doc = active_doc(s)?;
     let frame = s.ai.generate.frame_for(&doc);
-    let g = s.ai.generate.doc_mut(doc.id);
+    let g = s.ai.generate.mask_mut(doc.id);
     let mut plane = match &g.mask {
         Some(m) => m.grown(frame)?,
         None => MaskPlane::blank(frame)?,
@@ -378,7 +429,7 @@ fn mask_fill(s: &mut Session, _: &Value) -> Result<Value> {
 
 fn mask_clear(s: &mut Session, _: &Value) -> Result<Value> {
     let doc = active_doc(s)?;
-    s.ai.generate.doc_mut(doc.id).mask = None;
+    s.ai.generate.mask_mut(doc.id).mask = None;
     Ok(frame_json(s, &doc))
 }
 
@@ -386,7 +437,7 @@ fn mask_clear(s: &mut Session, _: &Value) -> Result<Value> {
 fn mask_invert(s: &mut Session, _: &Value) -> Result<Value> {
     let doc = active_doc(s)?;
     let frame = s.ai.generate.frame_for(&doc);
-    let g = s.ai.generate.doc_mut(doc.id);
+    let g = s.ai.generate.mask_mut(doc.id);
     let mut plane = match &g.mask {
         Some(m) => m.grown(frame)?,
         None => MaskPlane::blank(frame)?,
@@ -429,8 +480,46 @@ fn frame_pixels(doc: &Document, frame: Rect, linear: bool) -> Result<Rgba8> {
     Rgba8::from_raw(w, h, out).map_err(ml_err)
 }
 
-/// The generated pixels as a new layer at `frame`, masked by the feathered inpaint mask.
+/// The generated pixels as a new layer at `frame`, masked by the feathered inpaint mask. `img`
+/// and `mask` are at the generation size. A result with more pixels than the frame becomes a
+/// smart object that keeps all of them (except in linear-light documents: the source is 8-bit
+/// sRGB); otherwise it's resampled to the frame.
 fn result_layer(doc: &Document, name: String, frame: Rect, img: &Rgba8, mask: Option<&Mask>, linear: bool) -> Result<Layer> {
+    if mask.is_some_and(|m| (m.width, m.height) != (img.width, img.height)) {
+        return Err(EngineError::Other("internal error: the mask doesn't match the result".into()));
+    }
+    let (fw, fh) = (frame.width(), frame.height());
+    let mut l = if (img.width > fw || img.height > fh) && !linear {
+        smart_result(doc, name, frame, img)?
+    } else {
+        raster_result(doc, name, frame, &img.resized(fw, fh).map_err(ml_err)?, linear)?
+    };
+    if let Some(m) = mask {
+        let soft = m.dilated(FEATHER / 2).feathered(FEATHER).resized(fw, fh).map_err(ml_err)?;
+        let mut surface = Surface::with_default(PixelFormat::GRAY8, &[0.0]);
+        let vals: Vec<f32> = soft.data.iter().map(|&v| f32::from(v) / 255.0).collect();
+        surface.write_region(frame, &vals);
+        let format = surface.format().with_sample(doc.depth);
+        if surface.format() != format {
+            surface = surface.try_convert(format)?;
+        }
+        l.mask = Some(LayerMask { surface, ..LayerMask::reveal_all() });
+    }
+    Ok(l)
+}
+
+/// A smart object holding `img` as an embedded PNG, scaled onto `frame`.
+fn smart_result(doc: &Document, name: String, frame: Rect, img: &Rgba8) -> Result<Layer> {
+    let png = img.to_png().map_err(ml_err)?;
+    let (sx, sy) = (f64::from(frame.width()) / f64::from(img.width.max(1)), f64::from(frame.height()) / f64::from(img.height.max(1)));
+    let source = SmartSource::Embedded { file_name: "generated.png".into(), bytes: Arc::new(png) };
+    let mut so = SmartObject::new(source, Affine { m: [sx, 0.0, 0.0, sy, f64::from(frame.x0), f64::from(frame.y0)] }, None);
+    so.cache = Some(crate::smart_cmds::render(doc, &so)?.ok_or_else(|| EngineError::Other("could not render the generated image".into()))?);
+    Ok(Layer::new(name, LayerContent::Smart(so)))
+}
+
+/// `img` (frame-sized) as a pixel layer at `frame`.
+fn raster_result(doc: &Document, name: String, frame: Rect, img: &Rgba8, linear: bool) -> Result<Layer> {
     if (img.width, img.height) != (frame.width(), frame.height()) {
         return Err(EngineError::Other("internal error: the result doesn't match the frame".into()));
     }
@@ -451,22 +540,11 @@ fn result_layer(doc: &Document, name: String, frame: Rect, img: &Rgba8, mask: Op
     }
     let mut l = Layer::raster(name, fmt);
     crate::pixels_mut(&mut l)?.write_region(frame, &data);
-    if let Some(m) = mask {
-        let soft = m.dilated(FEATHER / 2).feathered(FEATHER);
-        let mut surface = Surface::with_default(PixelFormat::GRAY8, &[0.0]);
-        let vals: Vec<f32> = soft.data.iter().map(|&v| f32::from(v) / 255.0).collect();
-        surface.write_region(frame, &vals);
-        let format = surface.format().with_sample(doc.depth);
-        if surface.format() != format {
-            surface = surface.try_convert(format)?;
-        }
-        l.mask = Some(LayerMask { surface, ..LayerMask::reveal_all() });
-    }
     Ok(l)
 }
 
-/// `ai.generate` params → a request (without the frame's pixels).
-fn parse_request(p: &Value, frame: Rect) -> Result<GenerateRequest> {
+/// `ai.generate` params → a request at the generation size `(width, height)` (without pixels).
+fn parse_request(p: &Value, (width, height): (u32, u32)) -> Result<GenerateRequest> {
     const CMD: &str = "ai.generate";
     let checkpoint = p
         .get("model")
@@ -534,8 +612,8 @@ fn parse_request(p: &Value, frame: Rect) -> Result<GenerateRequest> {
         seed,
         sampler,
         strength: float("strength", 1.0)? as f32,
-        width: frame.width(),
-        height: frame.height(),
+        width,
+        height,
         init: None,
         mask: None,
     };
@@ -603,7 +681,8 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
     };
     let doc = active_doc(s)?;
     let frame = s.ai.generate.frame_for(&doc);
-    let mut req = parse_request(p, frame)?;
+    let (gw, gh) = s.ai.generate.gen_size_for(&doc);
+    let mut req = parse_request(p, (gw, gh))?;
     let store = s.ai.store();
     if engine == EngineKind::Native {
         photoka_ml::native::check_request(&req).map_err(ml_err)?;
@@ -630,8 +709,9 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
         move |ctx| {
             let _clear = PreviewGuard(Arc::clone(&slot));
             ctx.progress(0.0, "Reading the frame");
-            let init = frame_pixels(&doc, frame, linear)?;
+            let init = frame_pixels(&doc, frame, linear)?.resized(gw, gh).map_err(ml_err)?;
             if init.data.as_chunks::<4>().0.iter().any(|px| px[3] > 0) {
+                let user_mask = user_mask.map(|m| m.resized(gw, gh)).transpose().map_err(ml_err)?;
                 req.mask = photoka_ml::image::effective_mask(&init, user_mask.as_ref()).map_err(ml_err)?;
                 req.init = Some(init);
             }
@@ -650,6 +730,7 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
                 return Err(EngineError::Other("the document changed while generating (it was closed or another one is active); generate again".into()));
             }
             let layer = result_layer(&doc, name, frame, &out.image, mask.as_ref(), linear)?;
+            let smart = matches!(layer.content, LayerContent::Smart(_));
             let nid = s.edit(label, move |d, active| {
                 let id = d.insert_above(*active, layer);
                 *active = Some(id);
@@ -663,6 +744,8 @@ fn generate(s: &mut Session, p: &Value) -> Result<Value> {
                 "seed": out.seed,
                 "elapsedMs": out.elapsed_ms,
                 "frame": {"x": frame.x0, "y": frame.y0, "width": frame.width(), "height": frame.height()},
+                "generated": {"width": out.image.width, "height": out.image.height},
+                "smartObject": smart,
                 "masked": mask.is_some(),
             }))
         },
@@ -677,7 +760,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Get Generation Frame",
             menu: &[],
             shortcut: None,
-            params: "{} → {x,y,width,height,masked,maskCoverage}",
+            params: "{} → {x,y,width,height,genWidth,genHeight,masked,maskCoverage}",
             enabled: has_doc,
             run: frame_get,
             journal: false,
@@ -687,7 +770,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Set Generation Frame",
             menu: &[],
             shortcut: None,
-            params: r#"{"x":px?,"y":px?,"width":px?,"height":px?} (sides snap to 64, 64…2048; missing values keep the current frame)"#,
+            params: r#"{"x":px?,"y":px?,"width":px?,"height":px?,"genWidth":px?,"genHeight":px?} (sides snap to 64, 64…2048; with genWidth/genHeight the frame generates at that size (snapped) and its document sides are free, 8…4096; missing values keep the current frame)"#,
             enabled: has_doc,
             run: frame_set,
             journal: false,
@@ -747,7 +830,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Generate Image",
             menu: &[],
             shortcut: None,
-            params: r#"{"model":checkpoint file,"prompt":str,"negative":str?,"steps":1…150=20,"cfg":0…30=7,"seed":int|-1=random,"sampler":"ddim|euler|euler_a|dpmpp_2m|dpmpp_2m_karras|lcm"="dpmpp_2m_karras","strength":0…1=1,"vae":file?,"loras":[{"file","weight"}]?,"engine":"native|comfyui"="native"} → background job; a new layer at the frame (masked when inpainting) → {layer,seed,elapsedMs,frame,masked}"#,
+            params: r#"{"model":checkpoint file,"prompt":str,"negative":str?,"steps":1…150=20,"cfg":0…30=7,"seed":int|-1=random,"sampler":"ddim|euler|euler_a|dpmpp_2m|dpmpp_2m_karras|lcm"="dpmpp_2m_karras","strength":0…1=1,"vae":file?,"loras":[{"file","weight"}]?,"engine":"native|comfyui"="native"} → background job at the frame's generation size; a new layer at the frame (masked when inpainting; a smart object keeping every pixel when it generates more pixels than the frame covers) → {layer,seed,elapsedMs,frame,generated,smartObject,masked}"#,
             enabled: has_doc,
             run: generate,
             journal: true,
@@ -782,6 +865,78 @@ mod tests {
         s.execute("file.new", json!({"width": 200, "height": 100})).unwrap();
         let f = s.execute("ai.frame.get", json!({})).unwrap();
         assert_eq!((f["width"].as_u64(), f["height"].as_u64()), (Some(192), Some(64)));
+    }
+
+    #[test]
+    fn a_frame_can_generate_at_its_own_size() {
+        let mut s = session();
+        let get = |s: &mut Session| {
+            let f = s.execute("ai.frame.get", json!({})).unwrap();
+            [&f["x"], &f["y"], &f["width"], &f["height"], &f["genWidth"], &f["genHeight"]].map(|v| v.as_i64().unwrap())
+        };
+        assert_eq!(get(&mut s), [144, 44, 512, 512, 512, 512]);
+        // Zoomed in 4×: 128 document pixels, generated at 512 (snapped), document sides free.
+        s.execute("ai.frame.set", json!({"x": 300, "y": 200, "width": 127, "height": 129, "genWidth": 500, "genHeight": 530})).unwrap();
+        assert_eq!(get(&mut s), [300, 200, 127, 129, 512, 512]);
+        // A move keeps both sizes.
+        s.execute("ai.frame.set", json!({"x": 10})).unwrap();
+        assert_eq!(get(&mut s), [10, 200, 127, 129, 512, 512]);
+        // Document sides clamp to 8…4096.
+        s.execute("ai.frame.set", json!({"width": 1, "height": 99999, "genWidth": 768})).unwrap();
+        assert_eq!(get(&mut s), [10, 200, 8, 4096, 768, 512]);
+        // Plain sizes snap again and generate at the frame's own size.
+        s.execute("ai.frame.set", json!({"width": 300, "height": 300})).unwrap();
+        assert_eq!(get(&mut s), [10, 200, 320, 320, 320, 320]);
+        s.execute("ai.frame.set", json!({"width": 100, "height": 100, "genWidth": 512, "genHeight": 512})).unwrap();
+        s.execute("ai.frame.reset", json!({})).unwrap();
+        assert_eq!(get(&mut s), [144, 44, 512, 512, 512, 512]);
+        for p in [json!({"genWidth": "big"}), json!({"genHeight": true}), json!({"genWidth": 1e300}), json!({"genWidth": [1]})] {
+            assert!(s.execute("ai.frame.set", p.clone()).is_err(), "{p}");
+        }
+        // Frame changes don't touch the mask's revision.
+        let rev = s.ai.generate.mask_revision();
+        s.execute("ai.frame.set", json!({"x": 5})).unwrap();
+        assert_eq!(s.ai.generate.mask_revision(), rev);
+        s.execute("ai.mask.fill", json!({})).unwrap();
+        assert_ne!(s.ai.generate.mask_revision(), rev);
+    }
+
+    #[test]
+    fn a_larger_result_lands_as_a_smart_object() {
+        let s = session();
+        let doc = s.active().unwrap().doc.clone();
+        // 512 generated pixels for a 128-pixel frame: every pixel is kept, scaled onto the frame.
+        let frame = Rect::from_xywh(100, 100, 128, 128);
+        let mut data = vec![0u8; 512 * 512 * 4];
+        for (i, px) in data.chunks_exact_mut(4).enumerate() {
+            px.copy_from_slice(&[if (i % 512) < 256 { 255 } else { 0 }, 0, 255, 255]);
+        }
+        let img = Rgba8::from_raw(512, 512, data).unwrap();
+        let mut mask = Mask::new(512, 512).unwrap();
+        for (i, v) in mask.data.iter_mut().enumerate() {
+            *v = if (i / 512) < 256 { 255 } else { 0 };
+        }
+        let l = result_layer(&doc, "g".into(), frame, &img, Some(&mask), false).unwrap();
+        let LayerContent::Smart(so) = &l.content else { panic!("expected a smart object") };
+        assert!((so.transform.m[0] - 0.25).abs() < 1e-9 && (so.transform.m[3] - 0.25).abs() < 1e-9);
+        assert_eq!((so.transform.m[4], so.transform.m[5]), (100.0, 100.0));
+        let SmartSource::Embedded { bytes, .. } = &so.source else { panic!("expected an embedded source") };
+        let src = Rgba8::decode(bytes).unwrap();
+        assert_eq!((src.width, src.height), (512, 512));
+        let cache = so.cache.as_ref().unwrap();
+        let b = cache.content_bounds();
+        assert!(!b.intersect(&frame).is_empty(), "{b:?}");
+        // The mask is at document resolution over the frame (top half kept).
+        let m = l.mask.as_ref().unwrap();
+        assert!(m.value(164, 110) > 0.9 && m.value(164, 220) < 0.1);
+        // Same size or fewer pixels, and linear-light documents: a pixel layer at the frame.
+        for (img, linear) in [(img.resized(128, 128).unwrap(), false), (img.resized(64, 64).unwrap(), false), (img.clone(), true)] {
+            let mask = mask.resized(img.width, img.height).unwrap();
+            let l = result_layer(&doc, "g".into(), frame, &img, Some(&mask), linear).unwrap();
+            assert!(matches!(l.content, LayerContent::Raster(_)));
+        }
+        // A mask that doesn't match the result is an error, not a panic.
+        assert!(result_layer(&doc, "g".into(), frame, &img, Some(&Mask::new(8, 8).unwrap()), false).is_err());
     }
 
     #[test]
@@ -862,7 +1017,7 @@ mod tests {
 
     #[test]
     fn seeds_are_random_unless_given() {
-        let f = Rect::from_xywh(0, 0, 512, 512);
+        let f = (512, 512);
         let a = parse_request(&json!({"model": "m"}), f).unwrap().seed;
         let b = parse_request(&json!({"model": "m", "seed": -1}), f).unwrap().seed;
         assert_ne!(a, b);
@@ -896,6 +1051,32 @@ mod tests {
         // Undo removes it in one step.
         s.execute("edit.undo", json!({})).unwrap();
         assert_eq!(s.active().unwrap().doc.layers.len(), layers);
+    }
+
+    /// A frame over 128 document pixels generating at 512 (zoomed in 4×), with SD-Turbo: the
+    /// result is a smart object keeping all 512 pixels.
+    #[test]
+    #[ignore = "needs real model files (PHOTOKA_MODELS_DIR)"]
+    fn real_zoomed_generation_keeps_detail() {
+        assert!(std::env::var_os("PHOTOKA_MODELS_DIR").is_some(), "set PHOTOKA_MODELS_DIR");
+        let mut s = session();
+        s.execute("filter.render.tree", json!({})).unwrap();
+        s.execute("ai.frame.set", json!({"x": 336, "y": 236, "width": 128, "height": 128, "genWidth": 512, "genHeight": 512})).unwrap();
+        let r = s
+            .execute(
+                "ai.generate",
+                json!({"model": "sd_turbo.safetensors", "prompt": "a detailed oak branch with bark texture", "steps": 2, "cfg": 1.0, "seed": 3, "sampler": "euler_a", "strength": 0.6}),
+            )
+            .unwrap();
+        assert_eq!(r["smartObject"], json!(true));
+        assert_eq!(r["generated"], json!({"width": 512, "height": 512}));
+        let doc = s.active().unwrap().doc.clone();
+        let l = doc.layers.iter().find(|l| l.name.starts_with("Generated")).unwrap();
+        let LayerContent::Smart(so) = &l.content else { panic!("expected a smart object") };
+        let SmartSource::Embedded { bytes, .. } = &so.source else { panic!("expected an embedded source") };
+        let target = std::path::Path::new(env!("CARGO_MANIFEST_DIR")).join("../../target");
+        std::fs::write(target.join("ai-zoomed-source.png"), bytes.as_slice()).unwrap();
+        std::fs::write(target.join("ai-zoomed-doc.png"), doc_png(&doc)).unwrap();
     }
 
     fn doc_png(doc: &Document) -> Vec<u8> {

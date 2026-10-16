@@ -3815,3 +3815,9 @@ ai	Sampler	Семплер
 	{used} used, {free} free	Зайнято {used}, вільно {free}
 	· inpainting the masked area	· перемальовування області під маскою
 	· whole frame	· уся рамка
+	Lock frame to view	Закріпити рамку у вікні перегляду
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Рамка залишається на місці на екрані, поки ви масштабуєте й прокручуєте зображення під нею, і завжди генерує у своєму розмірі
+	Zoom and pan the image under the frame	Масштабувати й прокручувати зображення під рамкою
+	Zoom out to fit the frame	Зменште масштаб, щоб рамка вмістилася
+	Zoom in to fit the frame	Збільште масштаб, щоб рамка вмістилася
+	{w} × {h} from {fw} × {fh} px	{w} × {h} з {fw} × {fh} px

@@ -10,13 +10,29 @@ Apple silicon only. On an Intel Mac, the Generate panel explains why it's off.
 
 ## Using it
 
-1. **Window › Model Manager…**. Under **Suggested**, pick a model, read and accept its licence,
-   and download it. Under **Import**, add your own `.safetensors` checkpoint, LoRA or VAE (the kind
-   and family are detected from the file). **Installed** lists what's on disk.
-2. **Window › Generate** opens the Generate panel and selects the **Generate Frame** tool.
-3. Drag inside the frame to move it, or drag its edges to resize it (sides snap to multiples of
-   64 px, 64–2048). Switch the tool to **Mask** to paint what should change; **Erase** removes
-   mask. **Invert Mask** and **Clear Mask** are on the options bar.
+1. **Window › Model Manager…** (or **Model Manager…** in the Generate tab). Under **Suggested**,
+   pick a model (PerfectDeliberate v5, first on the list, is the suggested default), read and
+   accept its licence, and download it. Under **Import**, add your own `.safetensors` checkpoint,
+   LoRA or VAE (the kind and family are detected from the file). **Installed** lists what's on
+   disk.
+2. **Window › Generate** opens the **Generate** tab, next to Layers, Channels and Paths, and
+   selects the **Generate Frame** tool. Its settings start at DPM++ 2M Karras, 12 steps,
+   guidance 7 and 100% strength.
+3. **Lock frame to view** (on by default, on the options bar) works like Draw Things: the frame
+   stays put in the middle of the canvas while you zoom (pinch, scroll, ⌘+/⌘−) and drag the
+   image under it, and it always generates at its size (512 × 512, or another size from the
+   menu next to the checkbox). Zoomed in 400% on a hand, the frame covers 128 × 128 document
+   pixels: they're scaled up as the starting point, and the 512 × 512 result lands as a smart
+   object scaled onto those 128 pixels, so its shape and size match while every generated pixel
+   is kept (enlarge the image or rasterize later). The label above the frame reads
+   "512 × 512 from 128 × 128 px". With the checkbox off, drag inside the frame to move it, or
+   drag its edges to resize it (sides snap to multiples of 64 px, 64–2048).
+   Switch the tool to **Mask** to paint what should change; **Erase** removes mask. These three
+   buttons and **Clear Mask** also sit just above the frame; **Invert Mask** is on the options
+   bar.
+   The bar above the frame also has the prompt, a strength box (50% to start, so it reworks
+   what's there) and a Generate button (or press Return in the prompt). It uses the Generate
+   tab's model and other settings, with its own strength.
 4. Type a prompt, choose a model, and press **Generate** (or **Edit › Generate in Frame…**).
    - With no mask, the frame is generated from scratch (text to image); with **Strength** below 1,
      the frame's current pixels are the starting point (image to image).
@@ -25,8 +41,9 @@ Apple silicon only. On an Intel Mac, the Generate panel explains why it's off.
    - **Strength** works in both cases: 100% replaces the pixels, and lower values keep more of
      the original's shapes and colours (20–40% reworks it lightly). Every step you ask for
      runs, so low strength works with few-step models like SD-Turbo too.
-5. The result is a new pixel layer named after the prompt, at the frame, with a layer mask when
-   you inpainted. It's one undo step.
+5. The result is a new layer named after the prompt, at the frame, with a layer mask when you
+   inpainted: a pixel layer, or a smart object when it has more pixels than the frame covers
+   (not in 32-bit documents). It's one undo step.
 
 ## Engines
 
@@ -128,10 +145,23 @@ PHOTOKA_COMFY_DIR=/tmp/comfy PHOTOKA_MODELS_DIR=/path/to/models \
   cargo test -p photoka-ml --release -- --ignored real_install_start_and_generate
 ```
 
-## Performance (M-series, models on an external exFAT drive)
+## Performance (M4, 16 GB, models on an external exFAT drive)
 
-- SD 1.5, 512 × 512: first load ~60 s from the external drive, then ~2.8 s per step with CFG.
-- SD-Turbo, 2 steps: ~21 s per image once loaded.
+- SD 1.5, 512 × 512: first load ~60 s from the external drive, including a short warm-up pass that
+  compiles the GPU kernels, then ~2.8 s per step with CFG. Reading the prompt takes ~50 ms.
+- The VAE (`native/vae.rs`) encodes and decodes the whole frame in one pass in f16, redoing a pass
+  in f32 only if f16 overflows. Convolutions run in bands of rows and the GPU syncs between
+  blocks, so memory stays bounded and there are no tile seams.
+
+  | Frame | Encode | Decode |
+  |---|---|---|
+  | 512 × 512 | 1.6 s | 3.0 s |
+  | 768 × 768 | 3.6 s | 7.6 s |
+  | 1024 × 1024 | 6.1 s | 13.2 s |
+
+  The old tiled f32 VAE took 10.0 s and 20.6 s at 512 × 512. Peak memory, model included, is
+  7.5 GB at 1024 × 1024.
+- SD-Turbo, 2 steps: ~5.9 s per image once loaded (was ~21 s).
 - LoRA merge: ~5.6 s the first time, ~2 s when only a weight changes (factors are cached).
 - ComfyUI text to image: ~100 s cold (process start and model load), faster once warm.
 

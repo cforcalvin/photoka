@@ -3729,3 +3729,9 @@ ai	Sampler	Vzorkovač
 	{used} used, {free} free	{used} použito, {free} volno
 	· inpainting the masked area	· přemalování maskované oblasti
 	· whole frame	· celý rám
+	Lock frame to view	Zamknout rámeček k zobrazení
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Rámeček zůstává na obrazovce na místě, zatímco pod ním přibližujete a posouváte obraz, a vždy generuje ve své velikosti
+	Zoom and pan the image under the frame	Přibližovat a posouvat obraz pod rámečkem
+	Zoom out to fit the frame	Oddalte, aby se rámeček vešel
+	Zoom in to fit the frame	Přibližte, aby se rámeček vešel
+	{w} × {h} from {fw} × {fh} px	{w} × {h} z {fw} × {fh} px

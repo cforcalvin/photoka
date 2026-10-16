@@ -1674,7 +1674,8 @@ pub(crate) fn dock_body(app: &mut PhotokaApp, ui: &mut egui::Ui, group: crate::d
         (Group::History, _) => crate::comps_ui::panel(app, ui),
         (Group::Layers, 0) => layers(app, ui),
         (Group::Layers, 1) => channels(app, ui),
-        (Group::Layers, _) => crate::vector_ui::paths_panel(app, ui),
+        (Group::Layers, 2) => crate::vector_ui::paths_panel(app, ui),
+        (Group::Layers, _) => crate::generate_ui::panel(app, ui),
     }
 }
 

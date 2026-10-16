@@ -3714,3 +3714,9 @@ ai	Sampler	Sampler
 	{used} used, {free} free	{used} zajęte, {free} wolne
 	· inpainting the masked area	· ponowne generowanie zamaskowanego obszaru
 	· whole frame	· cała ramka
+	Lock frame to view	Zablokuj ramkę w widoku
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Ramka pozostaje nieruchoma na ekranie, gdy powiększasz i przesuwasz obraz pod nią, i zawsze generuje w swoim rozmiarze
+	Zoom and pan the image under the frame	Powiększaj i przesuwaj obraz pod ramką
+	Zoom out to fit the frame	Pomniejsz, aby zmieścić ramkę
+	Zoom in to fit the frame	Powiększ, aby zmieścić ramkę
+	{w} × {h} from {fw} × {fh} px	{w} × {h} z {fw} × {fh} px

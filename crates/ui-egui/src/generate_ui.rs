@@ -77,7 +77,6 @@ pub enum GenDrag {
 #[derive(Clone, Debug, PartialEq, Serialize, Deserialize)]
 #[serde(default)]
 pub struct GenerateUi {
-    pub open: bool,
     pub engine: GenEngine,
     pub mode: GenMode,
     pub model: String,
@@ -87,6 +86,8 @@ pub struct GenerateUi {
     pub steps: u32,
     pub cfg: f32,
     pub strength: f32,
+    /// The strength the frame's own prompt bar generates with (it keeps more of the image).
+    pub bar_strength: f32,
     pub seed: u64,
     /// A new seed for every generation (the dice); off keeps [`Self::seed`].
     pub random_seed: bool,
@@ -94,8 +95,19 @@ pub struct GenerateUi {
     /// Mask brush size and hardness (document pixels, 0…1).
     pub brush_size: f32,
     pub brush_hardness: f32,
+    /// Lock frame to view (Draw Things style): the frame stays put on screen while the image
+    /// zooms and pans under it, and always generates at [`Self::gen_size`].
+    pub lock_to_view: bool,
+    /// The locked frame's generation size (sides are multiples of 64).
+    pub gen_size: [u32; 2],
     #[serde(skip)]
     pub drag: Option<GenDrag>,
+    /// The locked frame last computed, and since when (it's sent once the view settles).
+    #[serde(skip)]
+    pub settling: Option<(photoka_geom::Rect, [u32; 2], f64)>,
+    /// The egui pass the Generate tab was last drawn in (the frame shows while it's on screen).
+    #[serde(skip)]
+    pub drawn_pass: Option<u64>,
     /// `ai.models.list`, refreshed about once a second while the panel is open.
     #[serde(skip)]
     pub installed: Value,
@@ -114,22 +126,26 @@ pub struct GenerateUi {
 impl Default for GenerateUi {
     fn default() -> Self {
         GenerateUi {
-            open: false,
             engine: GenEngine::Native,
             mode: GenMode::Frame,
             model: String::new(),
             prompt: String::new(),
             negative: String::new(),
             sampler: "dpmpp_2m_karras".into(),
-            steps: 20,
+            steps: 12,
             cfg: 7.0,
             strength: 1.0,
+            bar_strength: 0.5,
             seed: 0,
             random_seed: true,
             loras: Vec::new(),
             brush_size: 48.0,
             brush_hardness: 0.8,
+            lock_to_view: true,
+            gen_size: [512, 512],
             drag: None,
+            settling: None,
+            drawn_pass: None,
             installed: Value::Null,
             refreshed_at: None,
             comfy: Value::Null,
@@ -165,7 +181,44 @@ pub fn handles(id: &str) -> bool {
 }
 
 pub fn checked(app: &PhotokaApp, id: &str) -> Option<bool> {
-    (id == MENU_PANEL).then_some(app.ui.generate.open)
+    (id == MENU_PANEL).then(|| tab_open(app))
+}
+
+/// The Generate tab's index in the Layers | Channels | Paths | Generate group.
+pub const TAB: usize = 3;
+/// The Generate tab's panel id in a customised workspace.
+const PANEL_ID: &str = "generate";
+
+/// Whether the Generate tab is the one showing in its dock group (or, in a customised
+/// workspace, is open anywhere).
+pub fn tab_open(app: &PhotokaApp) -> bool {
+    if let Some(layout) = &app.ui.docking {
+        return layout.contains(&PANEL_ID.to_string());
+    }
+    let pro = app.ui.theme.is_pro();
+    app.ui.panels.layers && app.ui.dock_tabs.layers == TAB && app.ui.dock.visible_tabs(crate::dock::Group::Layers, pro).iter().any(|(i, _)| *i == TAB)
+}
+
+/// Bring the Generate tab up, or (`false`) put it away: back to the Layers tab, or closed in a
+/// customised workspace.
+pub fn show_tab(app: &mut PhotokaApp, show: bool) -> Result<(), String> {
+    app.ui.generate.refreshed_at = None;
+    if app.ui.docking.is_some() {
+        let id = format!("window.panel.{PANEL_ID}");
+        return crate::panel_docking::command(app, &id, &json!({"show": show})).unwrap_or(Ok(Value::Null)).map(|_| ());
+    }
+    if show {
+        app.ui.dock_tabs.layers = TAB;
+        crate::dock::reveal(app, crate::dock::Group::Layers);
+    } else if app.ui.dock_tabs.layers == TAB {
+        app.ui.dock_tabs.layers = 0;
+    }
+    Ok(())
+}
+
+/// Whether the Generate tab was drawn in this pass or the last one.
+fn tab_drawn(g: &GenerateUi, ctx: &egui::Context) -> bool {
+    g.drawn_pass.is_some_and(|p| p.saturating_add(1) >= ctx.cumulative_pass_nr())
 }
 
 pub fn enabled(app: &PhotokaApp, id: &str) -> Option<bool> {
@@ -176,8 +229,8 @@ pub fn enabled(app: &PhotokaApp, id: &str) -> Option<bool> {
     }
 }
 
-/// Window › Generate toggles the panel (`{"open": bool}` sets it); Edit › Generate in Frame…
-/// generates with the panel's settings, or opens the panel when no model is chosen yet.
+/// Window › Generate toggles the Generate tab (`{"open": bool}` sets it); Edit › Generate in
+/// Frame… generates with the panel's settings, or opens the tab when no model is chosen yet.
 pub fn menu(app: &mut PhotokaApp, id: &str, params: &Value) -> Option<Result<Value, String>> {
     match id {
         MENU_PANEL => {
@@ -187,22 +240,27 @@ pub fn menu(app: &mut PhotokaApp, id: &str, params: &Value) -> Option<Result<Val
                 Some("comfyui") => Some(GenEngine::Comfyui),
                 Some(e) => return Some(Err(format!("unknown engine `{e}` (native, comfyui)"))),
             };
-            let g = &mut app.ui.generate;
             if let Some(e) = engine {
-                g.engine = e;
+                app.ui.generate.engine = e;
             }
-            g.open = params.get("open").and_then(Value::as_bool).unwrap_or(engine.is_some() || !g.open);
-            g.refreshed_at = None;
-            if g.open && app.session.active().is_some() {
+            let open = match params.get("open") {
+                None => engine.is_some() || !tab_open(app),
+                Some(v) => match v.as_bool() {
+                    Some(b) => b,
+                    None => return Some(Err("open must be a boolean".into())),
+                },
+            };
+            if let Err(e) = show_tab(app, open) {
+                return Some(Err(e));
+            }
+            if open && app.session.active().is_some() {
                 app.ui.tool = Tool::GenFrame;
             }
-            Some(Ok(json!({"open": app.ui.generate.open})))
+            Some(Ok(json!({"open": open})))
         }
         MENU_RUN => {
             if app.ui.generate.model.is_empty() {
-                app.ui.generate.open = true;
-                app.ui.generate.refreshed_at = None;
-                return Some(Ok(json!({"open": true, "started": false})));
+                return Some(show_tab(app, true).map(|()| json!({"open": true, "started": false})));
             }
             Some(start(app))
         }
@@ -236,10 +294,19 @@ pub fn params(g: &GenerateUi) -> Value {
 
 /// Start a generation with the panel's settings.
 pub fn start(app: &mut PhotokaApp) -> Result<Value, String> {
+    start_with(app, None)
+}
+
+/// Start a generation with the panel's settings, at `strength` (0…1) when given.
+fn start_with(app: &mut PhotokaApp, strength: Option<f32>) -> Result<Value, String> {
+    sync_locked(app)?;
     if app.ui.generate.random_seed {
         app.ui.generate.seed = random_seed();
     }
-    let p = params(&app.ui.generate);
+    let mut p = params(&app.ui.generate);
+    if let Some(s) = strength {
+        p["strength"] = json!(s.clamp(0.0, 1.0));
+    }
     app.run("ai.generate", p)
 }
 
@@ -407,10 +474,118 @@ fn handle_at(r: photoka_geom::Rect, x: f64, y: f64, tol: f64) -> Option<(i8, i8)
     Some((hx, hy))
 }
 
+/// The largest share of the canvas the locked frame takes on screen.
+const LOCKED_FIT: f32 = 0.85;
+/// How long the view must rest before a moved locked frame is sent to the engine (seconds).
+const SETTLE: f64 = 0.15;
+/// The generation sizes on offer for a locked frame.
+pub const GEN_SIZES: [[u32; 2]; 7] = [[512, 512], [640, 640], [768, 768], [1024, 1024], [512, 768], [768, 512], [576, 1024]];
+
+/// A locked frame: its document rect, and how far it's off the document sides it can have
+/// (−1: zoomed in too far to fit [`MIN_FRAME_SIDE`], +1: zoomed out past [`MAX_FRAME_SIDE`]).
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct Locked {
+    pub rect: photoka_geom::Rect,
+    pub limit: i8,
+}
+
+/// With Lock frame to view: the frame centred on the canvas, as many screen points as the
+/// generation size has pixels (scaled down to fit the canvas), in document pixels.
+pub fn locked_frame(g: &GenerateUi, xf: &ViewXform) -> Option<Locked> {
+    use photoka_engine::ai_gen_cmds::{MAX_FRAME_SIDE, MIN_FRAME_SIDE};
+    let [gw, gh] = g.gen_size.map(|v| v.max(1) as f32);
+    let (cw, ch) = (xf.rect.width(), xf.rect.height());
+    let (zx, zy) = (xf.zoom_x(), xf.zoom);
+    if !(cw > 1.0 && ch > 1.0 && zx.is_finite() && zy.is_finite() && zx > 0.0 && zy > 0.0) {
+        return None;
+    }
+    let k = (LOCKED_FIT * cw / gw).min(LOCKED_FIT * ch / gh).min(1.0);
+    let (w, h) = (f64::from(gw * k / zx).round(), f64::from(gh * k / zy).round());
+    let (min, max) = (f64::from(MIN_FRAME_SIDE), f64::from(MAX_FRAME_SIDE));
+    let limit = if w.min(h) < min {
+        -1
+    } else if w.max(h) > max {
+        1
+    } else {
+        0
+    };
+    let (w, h) = (w.clamp(min, max), h.clamp(min, max));
+    let (cx, cy) = (f64::from(xf.center[0]), f64::from(xf.center[1]));
+    if !(cx.is_finite() && cy.is_finite() && cx.abs() < 1e6 && cy.abs() < 1e6) {
+        return None;
+    }
+    let rect = photoka_geom::Rect::from_xywh((cx - w / 2.0).round() as i32, (cy - h / 2.0).round() as i32, w as u32, h as u32);
+    Some(Locked { rect, limit })
+}
+
+/// The locked frame the active view wants (`None` when unlocked, or with no canvas yet).
+fn wanted(app: &PhotokaApp) -> Option<Locked> {
+    if !app.ui.generate.lock_to_view {
+        return None;
+    }
+    locked_frame(&app.ui.generate, &ViewXform::active(app)?)
+}
+
+/// Send the locked frame to the engine now if it moved (before generating or filling the mask).
+pub fn sync_locked(app: &mut PhotokaApp) -> Result<(), String> {
+    match wanted(app) {
+        Some(l) => send_locked(app, l.rect),
+        None => Ok(()),
+    }
+}
+
+fn send_locked(app: &mut PhotokaApp, rect: photoka_geom::Rect) -> Result<(), String> {
+    let Some(doc) = app.session.active().map(|d| d.doc.clone()) else { return Ok(()) };
+    let [gw, gh] = app.ui.generate.gen_size;
+    let st = &app.session.ai.generate;
+    if st.frame_for(&doc) == rect && st.gen_size_for(&doc) == (gw, gh) {
+        return Ok(());
+    }
+    app.run("ai.frame.set", json!({"x": rect.x0, "y": rect.y0, "width": rect.width(), "height": rect.height(), "genWidth": gw, "genHeight": gh})).map(|_| ())
+}
+
+/// Turn Lock frame to view on or off. Off leaves a frame of the generation size on the document,
+/// centred where the locked one was.
+pub fn set_lock(app: &mut PhotokaApp, on: bool) -> Result<(), String> {
+    if on {
+        app.ui.generate.lock_to_view = true;
+        return sync_locked(app);
+    }
+    let was = wanted(app);
+    app.ui.generate.lock_to_view = false;
+    app.ui.generate.settling = None;
+    let Some(l) = was else { return Ok(()) };
+    let [gw, gh] = app.ui.generate.gen_size;
+    let (cx, cy) = (l.rect.x0 + l.rect.width() as i32 / 2, l.rect.y0 + l.rect.height() as i32 / 2);
+    app.run("ai.frame.set", json!({"x": cx - gw as i32 / 2, "y": cy - gh as i32 / 2, "width": gw, "height": gh})).map(|_| ())
+}
+
+/// Whether a drag on the canvas pans the view (the locked frame stays put; the image moves).
+pub fn pans_view(app: &PhotokaApp) -> bool {
+    app.ui.tool == Tool::GenFrame && app.ui.generate.lock_to_view && app.ui.generate.mode == GenMode::Frame && app.session.active().is_some()
+}
+
+/// The Frame, Mask and Erase buttons (the options bar and the bar above the frame).
+fn mode_buttons(ui: &mut egui::Ui, g: &mut GenerateUi, size: f32) {
+    for (mode, icon, tip) in [
+        (GenMode::Frame, "frame-placeholder", if g.lock_to_view { tl!("Zoom and pan the image under the frame") } else { tl!("Move and resize the frame") }),
+        (GenMode::Mask, "brush", tl!("Paint what to regenerate")),
+        (GenMode::Erase, "eraser", tl!("Erase the mask")),
+    ] {
+        if crate::icons::button(ui, icon, size, g.mode == mode, tip).clicked() {
+            g.mode = mode;
+        }
+    }
+}
+
 /// Pointer input for the Generate Frame tool. Returns true when the event was its.
 pub fn pointer(app: &mut PhotokaApp, ev: ToolEvent, _mods: egui::Modifiers) -> bool {
     if app.ui.tool != Tool::GenFrame {
         return false;
+    }
+    // A locked frame doesn't move: the canvas pans instead (`pans_view`).
+    if pans_view(app) {
+        return true;
     }
     let Some(doc) = app.session.active().map(|d| d.doc.clone()) else { return true };
     let frame = app.session.ai.generate.frame_for(&doc);
@@ -466,14 +641,20 @@ pub fn options_bar(app: &mut PhotokaApp, ui: &mut egui::Ui, tool: Tool) -> bool 
         return false;
     }
     let g = &mut app.ui.generate;
-    for (mode, icon, tip) in [
-        (GenMode::Frame, "frame-placeholder", tl!("Move and resize the frame")),
-        (GenMode::Mask, "brush", tl!("Paint what to regenerate")),
-        (GenMode::Erase, "eraser", tl!("Erase the mask")),
-    ] {
-        if crate::icons::button(ui, icon, 24.0, g.mode == mode, tip).clicked() {
-            g.mode = mode;
-        }
+    mode_buttons(ui, g, 24.0);
+    crate::widgets::vline(ui, 22.0);
+    let mut lock = g.lock_to_view;
+    let lock_changed = ui
+        .checkbox(&mut lock, tl!("Lock frame to view"))
+        .on_hover_text(tl!("The frame stays put on screen while you zoom and pan the image under it, and always generates at its size"))
+        .changed();
+    if g.lock_to_view {
+        let label = |s: [u32; 2]| format!("{} × {}", s[0], s[1]);
+        egui::ComboBox::from_id_salt("gen-size").selected_text(label(g.gen_size)).width(96.0).show_ui(ui, |ui| {
+            for s in GEN_SIZES {
+                ui.selectable_value(&mut g.gen_size, s, label(s));
+            }
+        });
     }
     crate::widgets::vline(ui, 22.0);
     if g.mode != GenMode::Frame {
@@ -496,17 +677,19 @@ pub fn options_bar(app: &mut PhotokaApp, ui: &mut egui::Ui, tool: Tool) -> bool 
     if ui.small_button(tl!("Clear Mask")).clicked() {
         run = Some("ai.mask.clear");
     }
-    if ui.small_button(tl!("Reset Frame")).clicked() {
+    if !g.lock_to_view && ui.small_button(tl!("Reset Frame")).clicked() {
         run = Some("ai.frame.reset");
     }
     crate::widgets::vline(ui, 22.0);
-    if ui.small_button(tl!("Generate…")).clicked() {
-        app.ui.generate.open = true;
-        app.ui.generate.refreshed_at = None;
+    let show = ui.small_button(tl!("Generate…")).clicked();
+    let mut r = if lock_changed { set_lock(app, lock) } else { Ok(()) };
+    if show {
+        r = r.and_then(|()| show_tab(app, true));
     }
-    if let Some(id) = run
-        && let Err(e) = app.run(id, json!({}))
-    {
+    if let Some(id) = run {
+        r = r.and_then(|()| sync_locked(app)).and_then(|()| app.run(id, json!({})).map(|_| ()));
+    }
+    if let Err(e) = r {
         crate::notices::error(app, e);
     }
     true
@@ -527,6 +710,29 @@ fn outline(painter: &egui::Painter, xf: &ViewXform, r: photoka_geom::Rect, strok
     let (x0, y0, x1, y1) = (r.x0 as f32, r.y0 as f32, r.x1 as f32, r.y1 as f32);
     let pts: Vec<Pos2> = [(x0, y0), (x1, y0), (x1, y1), (x0, y1), (x0, y0)].into_iter().map(|(x, y)| xf.to_screen(x, y)).collect();
     painter.add(egui::Shape::line(pts, stroke));
+}
+
+/// Dab centres for a mask stroke preview, matching `ai.mask.stroke` (15% of size, at least 0.5 px).
+fn stroke_dabs(points: &[[f64; 2]], size: f64) -> Vec<[f64; 2]> {
+    let spacing = (size * 0.15).max(0.5);
+    let mut out = Vec::new();
+    let mut prev: Option<[f64; 2]> = None;
+    for &p in points {
+        match prev {
+            None => out.push(p),
+            Some(q) => {
+                let len = (p[0] - q[0]).hypot(p[1] - q[1]);
+                let n = (len / spacing).ceil().min(1e6) as usize;
+                let n = n.max(1);
+                for i in 1..=n {
+                    let t = i as f64 / n as f64;
+                    out.push([q[0] + (p[0] - q[0]) * t, q[1] + (p[1] - q[1]) * t]);
+                }
+            }
+        }
+        prev = Some(p);
+    }
+    out
 }
 
 /// The mask as a tinted texture (downsampled so a side stays within 2048 texels).
@@ -550,7 +756,7 @@ fn mask_texture(ctx: &egui::Context, plane: &photoka_engine::ai_gen_cmds::MaskPl
 
 /// The frame, the mask tint and the live preview (while the tool or the panel is up).
 pub fn draw_overlay(app: &mut PhotokaApp, painter: &egui::Painter, xf: &ViewXform) {
-    let shown = app.ui.tool == Tool::GenFrame || app.ui.generate.open;
+    let shown = app.ui.tool == Tool::GenFrame || tab_drawn(&app.ui.generate, painter.ctx());
     let Some(doc) = app.session.active().map(|d| d.doc.clone()) else { return };
     let gen_state = &app.session.ai.generate;
     let preview = gen_state.preview().filter(|p| p.doc == doc.id);
@@ -561,7 +767,7 @@ pub fn draw_overlay(app: &mut PhotokaApp, painter: &egui::Painter, xf: &ViewXfor
     let ctx = painter.ctx().clone();
     // The mask.
     if shown && let Some(plane) = gen_state.mask_for(doc.id) {
-        let rev = gen_state.revision();
+        let rev = gen_state.mask_revision();
         let stale = app.ui.generate.textures.mask.as_ref().is_none_or(|(d, r, _, _)| *d != doc.id || *r != rev);
         if stale {
             let tex = mask_texture(&ctx, plane, t.danger);
@@ -585,21 +791,26 @@ pub fn draw_overlay(app: &mut PhotokaApp, painter: &egui::Painter, xf: &ViewXfor
     if !shown {
         return;
     }
-    // A stroke being painted.
+    // A stroke being painted: round dabs, same centres as `ai.mask.stroke` (not a fat line).
     if let Some(GenDrag::Stroke { points }) = &app.ui.generate.drag {
-        let w = (app.ui.generate.brush_size * xf.zoom).max(1.0);
+        let radius = (app.ui.generate.brush_size * xf.zoom / 2.0).max(0.5);
         let c = if app.ui.generate.mode == GenMode::Erase { t.text_faint } else { t.danger.gamma_multiply(0.45) };
-        let pts: Vec<Pos2> = points.iter().map(|p| xf.to_screen(p[0] as f32, p[1] as f32)).collect();
-        if pts.len() == 1 {
-            painter.circle_filled(pts[0], w / 2.0, c);
+        for [x, y] in stroke_dabs(points, f64::from(app.ui.generate.brush_size)) {
+            painter.circle_filled(xf.to_screen(x as f32, y as f32), radius, c);
         }
-        painter.add(egui::Shape::line(pts, Stroke::new(w, c)));
     }
-    // The frame: where the drag puts it, else where it is.
-    let frame = app.ui.generate.drag.as_ref().and_then(dragged_frame).unwrap_or_else(|| app.session.ai.generate.frame_for(&doc));
+    // The frame: locked to the view, else where the drag puts it, else where it is.
+    let locked = if app.ui.generate.lock_to_view { locked_frame(&app.ui.generate, xf) } else { None };
+    if let Some(l) = locked {
+        settle(app, &ctx, l.rect);
+    }
+    let frame = match locked {
+        Some(l) => l.rect,
+        None => app.ui.generate.drag.as_ref().and_then(dragged_frame).unwrap_or_else(|| app.session.ai.generate.frame_for(&doc)),
+    };
     outline(painter, xf, frame, Stroke::new(3.0, t.shadow));
     outline(painter, xf, frame, Stroke::new(1.5, t.accent));
-    if app.ui.tool == Tool::GenFrame && app.ui.generate.mode == GenMode::Frame {
+    if app.ui.tool == Tool::GenFrame && app.ui.generate.mode == GenMode::Frame && locked.is_none() {
         for (hx, hy) in [(0.0, 0.0), (0.5, 0.0), (1.0, 0.0), (1.0, 0.5), (1.0, 1.0), (0.5, 1.0), (0.0, 1.0), (0.0, 0.5)] {
             let p = xf.to_screen(frame.x0 as f32 + frame.width() as f32 * hx, frame.y0 as f32 + frame.height() as f32 * hy);
             let r = egui::Rect::from_center_size(p, vec2(7.0, 7.0));
@@ -607,18 +818,137 @@ pub fn draw_overlay(app: &mut PhotokaApp, painter: &egui::Painter, xf: &ViewXfor
             painter.rect_stroke(r, 1.0, Stroke::new(1.0, t.accent), egui::StrokeKind::Inside);
         }
     }
-    let label = format!("{} × {}", frame.width(), frame.height());
-    let at = xf.to_screen(frame.x0 as f32, frame.y0 as f32) + vec2(0.0, -16.0);
+    let [gw, gh] = app.ui.generate.gen_size;
+    let label = match locked {
+        Some(l) if l.limit < 0 => tl!("Zoom out to fit the frame").to_string(),
+        Some(l) if l.limit > 0 => tl!("Zoom in to fit the frame").to_string(),
+        Some(_) if (gw, gh) != (frame.width(), frame.height()) => crate::i18n::fmt(
+            tl!("{w} × {h} from {fw} × {fh} px"),
+            &[("w", &gw.to_string()), ("h", &gh.to_string()), ("fw", &frame.width().to_string()), ("fh", &frame.height().to_string())],
+        ),
+        _ => format!("{} × {}", frame.width(), frame.height()),
+    };
+    let screen = xf.doc_rect(frame);
+    let at = screen.left_top() + vec2(0.0, -18.0);
     let galley = painter.layout_no_wrap(label, egui::FontId::proportional(11.0), t.primary_text);
     let bg = egui::Rect::from_min_size(at, galley.size() + vec2(8.0, 2.0));
     painter.rect_filled(bg, 3.0, t.accent);
     painter.galley(at + vec2(4.0, 1.0), galley, t.primary_text);
+    if app.ui.tool == Tool::GenFrame {
+        frame_bar(app, &ctx, &t, xf.rect, screen);
+    }
     // The brush outline under the pointer.
     if app.ui.tool == Tool::GenFrame
         && app.ui.generate.mode != GenMode::Frame
         && let Some(pos) = ctx.pointer_hover_pos().filter(|p| xf.rect.contains(*p))
     {
         painter.circle_stroke(pos, (app.ui.generate.brush_size * xf.zoom / 2.0).max(2.0), Stroke::new(1.0, t.text));
+    }
+}
+
+/// Send a moved locked frame to the engine once the view has rested for [`SETTLE`] seconds, so
+/// zooming doesn't run a command every frame.
+fn settle(app: &mut PhotokaApp, ctx: &egui::Context, rect: photoka_geom::Rect) {
+    let now = ctx.input(|i| i.time);
+    let size = app.ui.generate.gen_size;
+    match app.ui.generate.settling {
+        Some((r, s, since)) if r == rect && s == size => {
+            if now - since >= SETTLE {
+                if let Err(e) = send_locked(app, rect) {
+                    log::warn!("locked generation frame: {e}");
+                }
+            } else {
+                ctx.request_repaint_after(std::time::Duration::from_secs_f64(SETTLE));
+            }
+        }
+        _ => {
+            app.ui.generate.settling = Some((rect, size, now));
+            ctx.request_repaint_after(std::time::Duration::from_secs_f64(SETTLE));
+        }
+    }
+}
+
+/// How strongly the frame bar pulses while a generation is running (0…1 from wall time).
+fn bar_pulse(time: f64) -> f32 {
+    ((time * std::f64::consts::TAU * 1.25).sin() * 0.5 + 0.5) as f32
+}
+
+fn mix_rgb(a: Color32, b: Color32, t: f32) -> Color32 {
+    let t = t.clamp(0.0, 1.0);
+    Color32::from_rgba_unmultiplied(
+        (f32::from(a.r()) + (f32::from(b.r()) - f32::from(a.r())) * t).round() as u8,
+        (f32::from(a.g()) + (f32::from(b.g()) - f32::from(a.g())) * t).round() as u8,
+        (f32::from(a.b()) + (f32::from(b.b()) - f32::from(a.b())) * t).round() as u8,
+        a.a(),
+    )
+}
+
+/// The prompt, its strength and Generate, then the Frame, Mask and Erase buttons and Clear Mask,
+/// just above the frame's top-right corner (kept inside the canvas when the frame's top is off
+/// screen). Generate here uses [`GenerateUi::bar_strength`]; the rest are the panel's settings.
+fn frame_bar(app: &mut PhotokaApp, ctx: &egui::Context, t: &Tokens, canvas: egui::Rect, frame: egui::Rect) {
+    let (mut clear, mut generate) = (false, false);
+    let busy = app.session.ai.generate.busy();
+    let pulse = if busy {
+        let time = ctx.input(|i| i.time);
+        ctx.request_repaint();
+        bar_pulse(time)
+    } else {
+        0.0
+    };
+    let fill = if busy { mix_rgb(t.card, t.accent.gamma_multiply(0.35), pulse * 0.55) } else { t.card };
+    let border = if busy { mix_rgb(t.card_border, t.accent, 0.35 + pulse * 0.65) } else { t.card_border };
+    let stroke_w = if busy { 1.0 + pulse } else { 1.0 };
+    // Above the size label on the frame's top edge.
+    let pos = egui::pos2(frame.right(), frame.top() - 22.0);
+    egui::Area::new(egui::Id::new("gen-frame-bar")).order(egui::Order::Foreground).pivot(egui::Align2::RIGHT_BOTTOM).fixed_pos(pos).constrain_to(canvas).show(
+        ctx,
+        |ui| {
+            egui::Frame::new().fill(fill).stroke(Stroke::new(stroke_w, border)).corner_radius(t.radius_sm).inner_margin(3.0).show(ui, |ui| {
+                ui.horizontal(|ui| {
+                    ui.spacing_mut().item_spacing.x = 2.0;
+                    // Same height as the strength DragValue (theme interact size).
+                    let row_h = ui.spacing().interact_size.y;
+                    let g = &mut app.ui.generate;
+                    let prompt = ui.add(
+                        egui::TextEdit::singleline(&mut g.prompt)
+                            .desired_width(220.0)
+                            .min_size(vec2(0.0, row_h))
+                            .margin(egui::Margin::symmetric(6, 2))
+                            .vertical_align(egui::Align::Center)
+                            .hint_text(tl!("Describe the image…")),
+                    );
+                    let entered = prompt.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
+                    let mut strength = g.bar_strength * 100.0;
+                    if ui
+                        .add(egui::DragValue::new(&mut strength).range(0.0..=100.0).speed(1.0).suffix("%"))
+                        .on_hover_text(tl!("How much of the frame's pixels to replace: 100% ignores them; lower keeps more of the original."))
+                        .changed()
+                    {
+                        g.bar_strength = (strength / 100.0).clamp(0.0, 1.0);
+                    }
+                    let go = ui.add_enabled_ui(!busy, |ui| crate::icons::button(ui, "sparkles", 22.0, false, tl!("Generate"))).inner.clicked();
+                    generate = (go || entered) && !busy;
+                    crate::widgets::vline(ui, 18.0);
+                    mode_buttons(ui, g, 22.0);
+                    crate::widgets::vline(ui, 18.0);
+                    clear = ui.small_button(tl!("Clear Mask")).clicked();
+                });
+            });
+        },
+    );
+    let r = if clear {
+        app.run("ai.mask.clear", json!({})).map(|_| ())
+    } else if generate && app.ui.generate.model.is_empty() {
+        show_tab(app, true).and_then(|()| Err(tl!("Choose a model").to_string()))
+    } else if generate {
+        let s = app.ui.generate.bar_strength;
+        start_with(app, Some(s)).map(|_| ())
+    } else {
+        Ok(())
+    };
+    if let Err(e) = r {
+        crate::notices::error(app, e);
     }
 }
 
@@ -654,13 +984,13 @@ enum Act {
     Generate,
     Cancel(photoka_engine::jobs::JobId),
     ModelManager,
-    Close,
 }
 
-pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
-    if !app.ui.generate.open {
-        return;
-    }
+/// The Generate tab (Layers | Channels | Paths | Generate): engine, model, prompt, settings,
+/// LoRAs, the frame and Generate.
+pub fn panel(app: &mut PhotokaApp, ui: &mut egui::Ui) {
+    let ctx = ui.ctx().clone();
+    app.ui.generate.drawn_pass = Some(ctx.cumulative_pass_nr());
     let now = ctx.input(|i| i.time);
     refresh(app, now);
     let job = running_job(app);
@@ -668,7 +998,7 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
     if job.is_some() || cjob.is_some() {
         ctx.request_repaint_after(std::time::Duration::from_millis(200));
     }
-    let t = Tokens::get(ctx);
+    let t = Tokens::get(&ctx);
     let mut g = std::mem::take(&mut app.ui.generate);
     let doc = app.session.active().map(|d| d.doc.clone());
     let frame = doc.as_ref().map(|d| app.session.ai.generate.frame_for(d));
@@ -678,10 +1008,7 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
     let loras = installed(&g, "lora");
     let loaded = app.session.ai.generate.loaded_model();
     let mut acts: Vec<Act> = Vec::new();
-    crate::analysis_ui::panel_window(app, ctx, "generate-panel", tl!("Generate"), vec2(-40.0, 40.0), 340.0, |ui| {
-        if crate::analysis_ui::title_row(ui, tl!("Generate")) {
-            acts.push(Act::Close);
-        }
+    {
         ui.horizontal(|ui| {
             ui.label(RichText::new(tl!("Engine")).color(t.text_dim).size(11.5));
             for (e, label) in [(GenEngine::Native, tl!("Built-in")), (GenEngine::Comfyui, "ComfyUI")] {
@@ -701,23 +1028,26 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
         ui.horizontal(|ui| {
             ui.label(RichText::new(tl!("Model")).color(t.text_dim).size(11.5));
             let shown = if g.model.is_empty() { tl!("Choose a model").to_string() } else { g.model.clone() };
-            egui::ComboBox::from_id_salt("gen-model").width(230.0).selected_text(shown).show_ui(ui, |ui| {
+            let width = (ui.available_width() - 8.0).max(80.0);
+            egui::ComboBox::from_id_salt("gen-model").width(width).selected_text(shown).truncate().show_ui(ui, |ui| {
                 for (file, family) in &checkpoints {
                     let label = if family.is_empty() { file.clone() } else { format!("{file}  ·  {family}") };
                     ui.selectable_value(&mut g.model, file.clone(), label);
                 }
             });
         });
-        if checkpoints.is_empty() {
-            ui.horizontal(|ui| {
+        ui.horizontal(|ui| {
+            if checkpoints.is_empty() {
                 ui.label(RichText::new(tl!("No models installed yet.")).color(t.text_faint).size(11.5));
+            } else if loaded.as_deref() == Some(g.model.as_str()) {
+                ui.label(RichText::new(tl!("Loaded and ready")).color(t.text_faint).size(10.5));
+            }
+            ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if ui.small_button(tl!("Model Manager…")).clicked() {
                     acts.push(Act::ModelManager);
                 }
             });
-        } else if loaded.as_deref() == Some(g.model.as_str()) {
-            ui.label(RichText::new(tl!("Loaded and ready")).color(t.text_faint).size(10.5));
-        }
+        });
         ui.add_space(2.0);
         ui.label(RichText::new(tl!("Prompt")).color(t.text_dim).size(11.5));
         ui.add(egui::TextEdit::multiline(&mut g.prompt).desired_rows(3).desired_width(f32::INFINITY).hint_text(tl!("Describe the image…")));
@@ -772,7 +1102,8 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
         let mut remove = None;
         for (i, slot) in g.loras.iter_mut().enumerate() {
             ui.horizontal(|ui| {
-                egui::ComboBox::from_id_salt(("gen-lora", i)).width(170.0).selected_text(slot.file.clone()).show_ui(ui, |ui| {
+                let width = (ui.available_width() - 90.0).max(80.0);
+                egui::ComboBox::from_id_salt(("gen-lora", i)).width(width).selected_text(slot.file.clone()).truncate().show_ui(ui, |ui| {
                     for (file, _) in &loras {
                         ui.selectable_value(&mut slot.file, file.clone(), file);
                     }
@@ -832,7 +1163,7 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
                 }
             }
         }
-    });
+    }
     app.ui.generate = g;
     if !acts.is_empty() {
         app.ui.generate.refreshed_at = None;
@@ -850,10 +1181,6 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
                 Ok(Value::Null)
             }
             Act::ModelManager => crate::model_manager_ui::menu(app, crate::model_manager_ui::MENU_ID, &json!({"tab": "suggested"})).unwrap_or(Ok(Value::Null)),
-            Act::Close => {
-                app.ui.generate.open = false;
-                Ok(Value::Null)
-            }
         };
         if let Err(e) = r {
             crate::notices::error(app, e);
@@ -923,15 +1250,36 @@ mod tests {
     }
 
     #[test]
+    fn a_stroke_preview_stamps_round_dabs_along_the_path() {
+        // One point → one dab; a short hop under the spacing still gets the end dab.
+        assert_eq!(stroke_dabs(&[[10.0, 10.0]], 40.0), vec![[10.0, 10.0]]);
+        let short = stroke_dabs(&[[0.0, 0.0], [3.0, 0.0]], 40.0);
+        assert_eq!(short, vec![[0.0, 0.0], [3.0, 0.0]]);
+        // 100 px at size 40 → spacing 6 → 17 steps between ends (plus the start).
+        let long = stroke_dabs(&[[0.0, 0.0], [100.0, 0.0]], 40.0);
+        assert_eq!(long.first(), Some(&[0.0, 0.0]));
+        assert_eq!(long.last(), Some(&[100.0, 0.0]));
+        assert_eq!(long.len(), 1 + (100.0_f64 / 6.0).ceil() as usize);
+        assert!(long.windows(2).all(|w| (w[1][0] - w[0][0]).abs() <= 6.0 + 1e-9));
+    }
+
+    #[test]
     fn the_tool_moves_resizes_and_masks() {
         let mut app = app();
         let ctx = egui::Context::default();
         crate::menus::invoke(&mut app, &ctx, MENU_PANEL, json!({})).unwrap();
-        assert!(app.ui.generate.open && app.ui.tool == Tool::GenFrame);
+        assert!(tab_open(&app) && app.ui.tool == Tool::GenFrame);
+        assert_eq!(app.ui.dock_tabs.layers, TAB);
+        assert_eq!(checked(&app, MENU_PANEL), Some(true));
+        // Choosing it again puts it away, back to the Layers tab.
+        crate::menus::invoke(&mut app, &ctx, MENU_PANEL, json!({})).unwrap();
+        assert!(!tab_open(&app) && app.ui.dock_tabs.layers == 0);
         crate::menus::invoke(&mut app, &ctx, MENU_PANEL, json!({"engine": "comfyui"})).unwrap();
-        assert!(app.ui.generate.open && app.ui.generate.engine == GenEngine::Comfyui);
+        assert!(tab_open(&app) && app.ui.generate.engine == GenEngine::Comfyui);
         assert!(crate::menus::invoke(&mut app, &ctx, MENU_PANEL, json!({"engine": "dall-e"})).is_err());
+        assert!(crate::menus::invoke(&mut app, &ctx, MENU_PANEL, json!({"open": "yes"})).is_err());
         assert!(crate::menus::is_live(MENU_PANEL) && crate::menus::is_live(MENU_RUN));
+        app.ui.generate.lock_to_view = false;
         assert_eq!(frame(&app), DocRect::new(256, 128, 768, 640));
         drag(&mut app, [400.0, 400.0], [336.0, 336.0]);
         assert_eq!(frame(&app), DocRect::new(192, 64, 704, 576));
@@ -946,26 +1294,127 @@ mod tests {
         drag(&mut app, [250.0, 300.0], [550.0, 300.0]);
         let erased = app.session.ai.generate.mask_for(id).map_or(0, |m| m.value(400, 300));
         assert_eq!(erased, 0);
-        // Without a model, Generate in Frame opens the panel rather than failing.
-        app.ui.generate.open = false;
+        // Without a model, Generate in Frame opens the tab rather than failing.
+        show_tab(&mut app, false).unwrap();
+        assert!(!tab_open(&app));
         let r = crate::menus::invoke(&mut app, &ctx, MENU_RUN, json!({})).unwrap();
         assert_eq!(r["started"], false);
-        assert!(app.ui.generate.open);
+        assert!(tab_open(&app));
+    }
+
+    #[test]
+    fn the_generate_tab_lives_with_layers_channels_and_paths() {
+        let mut app = app();
+        let ctx = egui::Context::default();
+        let names: Vec<&str> = app.ui.dock.visible_tabs(crate::dock::Group::Layers, true).into_iter().map(|(_, n)| n).collect();
+        assert_eq!(names, ["Layers", "Channels", "Paths", "Generate"]);
+        // A customised workspace opens and closes it as its own panel.
+        crate::menus::invoke(&mut app, &ctx, "window.panel.activate", json!({"panel": "Generate"})).unwrap();
+        assert!(app.ui.docking.is_some() && tab_open(&app));
+        show_tab(&mut app, false).unwrap();
+        assert!(!tab_open(&app));
+        show_tab(&mut app, true).unwrap();
+        assert!(tab_open(&app));
+    }
+
+    #[test]
+    fn defaults_and_the_frame_bar_strength() {
+        let g = GenerateUi::default();
+        assert_eq!((g.sampler.as_str(), g.steps, g.cfg, g.strength, g.bar_strength), ("dpmpp_2m_karras", 12, 7.0, 1.0, 0.5));
+        let mut app = app();
+        app.ui.generate.model = "missing.safetensors".into();
+        // The bar's strength overrides the panel's for its own Generate.
+        let r = start_with(&mut app, Some(0.5));
+        assert!(r.is_err() || running_job(&app).is_some());
+        assert_eq!(params(&app.ui.generate)["strength"], 1.0);
+    }
+
+    #[test]
+    fn the_frame_bar_pulse_oscillates() {
+        let a = bar_pulse(0.0);
+        let b = bar_pulse(0.2);
+        let c = bar_pulse(0.4);
+        assert!((0.0..=1.0).contains(&a) && (0.0..=1.0).contains(&b) && (0.0..=1.0).contains(&c));
+        assert!((a - b).abs() > 0.05 || (b - c).abs() > 0.05, "pulse should move over time");
+        assert_eq!(mix_rgb(Color32::BLACK, Color32::WHITE, 0.0), Color32::BLACK);
+        assert_eq!(mix_rgb(Color32::BLACK, Color32::WHITE, 1.0), Color32::WHITE);
+    }
+
+    #[test]
+    fn a_locked_frame_follows_the_view() {
+        let mut app = app();
+        app.ui.tool = Tool::GenFrame;
+        app.last_canvas_rect = egui::Rect::from_min_size(Pos2::ZERO, vec2(1400.0, 1000.0));
+        let id = app.session.active().map(|d| d.doc.id).unwrap();
+        let set_view = |app: &mut PhotokaApp, zoom: f32, center: [f32; 2]| {
+            let ppp = app.canvas_ppp();
+            let v = &mut app.ui.views[0];
+            (v.zoom, v.center, v.rotation, v.fit_pending, v.fill_pending) = (zoom * ppp, center, 0.0, false, false);
+        };
+        // 100%: 512 document pixels for 512 generated ones, centred on the view.
+        set_view(&mut app, 1.0, [400.0, 300.0]);
+        sync_locked(&mut app).unwrap();
+        let f = frame(&app);
+        assert_eq!((f.width(), f.height()), (512, 512));
+        assert_eq!((f.x0 + 256, f.y0 + 256), (400, 300));
+        // 400%: the same frame on screen covers 128 document pixels, still generating 512.
+        set_view(&mut app, 4.0, [200.0, 150.0]);
+        sync_locked(&mut app).unwrap();
+        let f = frame(&app);
+        let doc = app.session.active().map(|d| d.doc.clone()).unwrap();
+        assert_eq!((f.width(), f.height(), f.x0, f.y0), (128, 128, 136, 86));
+        assert_eq!(app.session.ai.generate.gen_size_for(&doc), (512, 512));
+        // 25% at 768: 3072 document pixels.
+        app.ui.generate.gen_size = [768, 768];
+        set_view(&mut app, 0.25, [500.0, 400.0]);
+        sync_locked(&mut app).unwrap();
+        assert_eq!(frame(&app).width(), 3072);
+        // A drag in Frame mode pans the view; mask strokes still paint.
+        assert!(pans_view(&app));
+        drag(&mut app, [400.0, 400.0], [200.0, 200.0]);
+        assert_eq!(frame(&app).width(), 3072, "the frame didn't move or resize");
+        app.ui.generate.mode = GenMode::Mask;
+        assert!(!pans_view(&app));
+        drag(&mut app, [450.0, 400.0], [550.0, 400.0]);
+        assert!(app.session.ai.generate.mask_for(id).is_some());
+        // Unlocking leaves a 768 frame on the document, centred where the locked one was.
+        set_view(&mut app, 4.0, [400.0, 300.0]);
+        set_lock(&mut app, false).unwrap();
+        let f = frame(&app);
+        assert_eq!((f.width(), f.height(), f.x0 + 384, f.y0 + 384), (768, 768, 400, 300));
+        assert_eq!(app.session.ai.generate.gen_size_for(&doc), (768, 768));
+        set_lock(&mut app, true).unwrap();
+        assert_eq!(frame(&app).width(), 192);
+        // Zoomed in past 8 document pixels: clamped, and the label says so.
+        set_view(&mut app, 200.0, [400.0, 300.0]);
+        let xf = ViewXform::active(&app).unwrap();
+        let l = locked_frame(&app.ui.generate, &xf).unwrap();
+        assert_eq!((l.rect.width(), l.limit), (8, -1));
+        // No canvas yet: nothing to lock to.
+        app.last_canvas_rect = egui::Rect::NOTHING;
+        assert!(wanted(&app).is_none());
     }
 
     #[test]
     fn the_panel_and_overlay_draw_without_models() {
         let mut app = app();
         let ctx = egui::Context::default();
-        app.ui.generate.open = true;
+        crate::PhotokaApp::setup_context(&ctx, Default::default());
+        let render = |app: &mut PhotokaApp| {
+            for _ in 0..3 {
+                let mut o = ctx.run_ui(Default::default(), |ui| panel(app, ui));
+                o.textures_delta.clear();
+            }
+        };
         app.ui.tool = Tool::GenFrame;
         for engine in [GenEngine::Native, GenEngine::Comfyui] {
             app.ui.generate.engine = engine;
-            crate::analysis_ui::tests::render(&mut app, &ctx, windows);
+            render(&mut app);
         }
         assert!(app.ui.generate.comfy.get("installed").is_some(), "the panel polls ComfyUI's status");
+        assert!(app.ui.generate.drawn_pass.is_some());
         app.ui.generate.comfy_confirm = true;
-        crate::analysis_ui::tests::render(&mut app, &ctx, windows);
+        render(&mut app);
         app.ui.generate.model = "missing.safetensors".into();
         assert!(start(&mut app).is_err() || running_job(&app).is_some());
         let p = params(&app.ui.generate);

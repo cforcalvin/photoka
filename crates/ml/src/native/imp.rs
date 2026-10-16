@@ -5,9 +5,10 @@ use std::path::{Path, PathBuf};
 
 use candle_core::{DType, Device, Module, Tensor};
 use candle_nn::VarBuilder;
-use candle_transformers::models::stable_diffusion::{clip, unet_2d, vae};
+use candle_transformers::models::stable_diffusion::{clip, unet_2d};
 
 use super::ResolvedModels;
+use super::vae::{Vae, VaeConfig};
 use crate::catalog::Family;
 use crate::image::{Mask, Rgba8};
 use crate::keymap::{self, Component, Transform};
@@ -19,14 +20,12 @@ use crate::{MlError, Progress, Result};
 
 const LATENT_SCALE: f64 = 0.18215;
 const UNET_DTYPE: DType = DType::F16;
-/// CLIP and the VAE run in f32: f16 text encoders and VAEs can overflow.
+/// CLIP runs in f32: f16 text encoders can overflow.
 const CLIP_DTYPE: DType = DType::F32;
-const VAE_DTYPE: DType = DType::F32;
-/// VAE tile side and overlap, in latent pixels. candle's Metal convolutions build an im2col
-/// matrix of about 1.2 GB per full-resolution layer at 512×512, so whole-frame VAE passes run
-/// out of GPU memory (silently, as garbage pixels) on 16 GB Macs.
-const VAE_TILE: usize = 32;
-const VAE_OVERLAP: usize = 8;
+/// The VAE runs in f16, which halves its time and memory. A frame that overflows f16 is redone
+/// with an f32 copy, built from the f32 weights kept for it.
+const VAE_DTYPE: DType = DType::F16;
+const VAE_WEIGHT_DTYPE: DType = DType::F32;
 
 fn ce(e: candle_core::Error) -> MlError {
     let msg = e.to_string();
@@ -80,7 +79,7 @@ fn component_dtype(c: Component) -> DType {
     match c {
         Component::Unet => UNET_DTYPE,
         Component::Clip => CLIP_DTYPE,
-        Component::Vae => VAE_DTYPE,
+        Component::Vae => VAE_WEIGHT_DTYPE,
     }
 }
 
@@ -118,17 +117,6 @@ fn clip_config(family: Family) -> clip::Config {
     if family == Family::SdTurbo { clip::Config::v2_1() } else { clip::Config::v1_5() }
 }
 
-fn vae_config() -> vae::AutoEncoderKLConfig {
-    vae::AutoEncoderKLConfig {
-        block_out_channels: vec![128, 256, 512, 512],
-        layers_per_block: 2,
-        latent_channels: 4,
-        norm_num_groups: 32,
-        use_quant_conv: true,
-        use_post_quant_conv: true,
-    }
-}
-
 /// A loaded checkpoint: base weights on the GPU, the LoRA-merged copies in use, and the modules.
 pub(super) struct Loaded {
     checkpoint: PathBuf,
@@ -143,12 +131,35 @@ pub(super) struct Loaded {
     /// The weights the UNet is built from (base, or base with LoRAs merged).
     unet_weights: HashMap<String, Tensor>,
     clip_model: clip::ClipTextTransformer,
-    vae: vae::AutoEncoderKL,
+    /// The VAE's weights in f32, for the fallback.
+    vae_weights: HashMap<String, Tensor>,
+    vae: Vae,
+    /// The f32 VAE, built the first time a frame overflows f16.
+    vae32: std::sync::OnceLock<Vae>,
     tokenizer: tokenizers::Tokenizer,
     loras: Vec<(PathBuf, f32)>,
     /// Low-rank factors of the LoRAs in use, read once per file, so a weight change re-merges
     /// from memory.
     factors: HashMap<PathBuf, LoraFactors>,
+    /// Stage timings of the last generation.
+    timings: StageTimes,
+}
+
+/// How long each stage of a generation took, in milliseconds.
+#[derive(Clone, Copy, Debug, Default, PartialEq, Eq)]
+pub(super) struct StageTimes {
+    /// The text encoder (prompt and negative prompt).
+    pub prompt: u64,
+    /// VAE-encoding the frame (image to image, inpainting).
+    pub encode: u64,
+    /// The sampling steps.
+    pub steps: u64,
+    /// VAE-decoding the result.
+    pub decode: u64,
+}
+
+fn ms_since(t: std::time::Instant) -> u64 {
+    u64::try_from(t.elapsed().as_millis()).unwrap_or(u64::MAX)
 }
 
 /// One LoRA's factors, matched to this checkpoint's layers.
@@ -222,7 +233,7 @@ impl Loaded {
         let vae_w = maps.remove(&Component::Vae).unwrap_or_default();
         let in_channels =
             base_unet.get("conv_in.weight").and_then(|t| t.dims().get(1).copied()).ok_or_else(|| MlError::BadModel(format!("{name}: no UNet found")))?;
-        let vae = vae::AutoEncoderKL::new(VarBuilder::from_tensors(vae_w, VAE_DTYPE, &device), 3, 3, vae_config())
+        let vae = Vae::new(VarBuilder::from_tensors(vae_w.clone(), VAE_DTYPE, &device), &VaeConfig::sd())
             .map_err(|e| MlError::BadModel(format!("{name}: VAE: {e}")))?;
         let clip_model = build_clip(&base_clip, m.family, &device).map_err(|e| MlError::BadModel(format!("{name}: text encoder: {e}")))?;
         // Build once to check every UNet weight is present and shaped right.
@@ -235,7 +246,7 @@ impl Loaded {
         )
         .map_err(|e| MlError::BadModel(format!("{name}: UNet: {e}")))?;
         let tokenizer = tokenizers::Tokenizer::from_file(&m.tokenizer).map_err(|e| MlError::BadModel(format!("tokenizer: {e}")))?;
-        Ok(Loaded {
+        let loaded = Loaded {
             checkpoint: m.checkpoint.clone(),
             vae_file: m.vae.clone(),
             tokenizer_file: m.tokenizer.clone(),
@@ -247,11 +258,77 @@ impl Loaded {
             base_clip,
             index,
             clip_model,
+            vae_weights: vae_w,
             vae,
+            vae32: std::sync::OnceLock::new(),
             tokenizer,
             loras: Vec::new(),
             factors: HashMap::new(),
-        })
+            timings: StageTimes::default(),
+        };
+        progress.check()?;
+        progress.report(0.11, "Warming up");
+        loaded.warm_up()?;
+        Ok(loaded)
+    }
+
+    /// Run each model once on a tiny input, so Metal compiles its kernels now, under the
+    /// "Warming up" label, rather than during the first prompt, encode, step and decode.
+    fn warm_up(&self) -> Result<()> {
+        let started = std::time::Instant::now();
+        let emb = self.encode_prompt("")?;
+        let lat = Tensor::zeros((1, self.in_channels, 16, 16), UNET_DTYPE, &self.device).map_err(ce)?;
+        self.build_unet()?.forward(&lat, 999.0, &emb).map_err(ce)?;
+        self.device.synchronize().map_err(ce)?;
+        let img = Tensor::zeros((1, 3, 64, 64), DType::F32, &self.device).map_err(ce)?;
+        let noise = Tensor::zeros((1, 4, 8, 8), DType::F32, &self.device).map_err(ce)?;
+        self.vae.decode(&self.vae.encode(&img, &noise).map_err(ce)?).map_err(ce)?;
+        self.device.synchronize().map_err(ce)?;
+        log::info!("warm-up: {} ms", ms_since(started));
+        Ok(())
+    }
+
+    fn build_unet(&self) -> Result<unet_2d::UNet2DConditionModel> {
+        unet_2d::UNet2DConditionModel::new(
+            VarBuilder::from_tensors(self.unet_weights.clone(), UNET_DTYPE, &self.device),
+            self.in_channels,
+            4,
+            false,
+            unet_config(self.family, None),
+        )
+        .map_err(ce)
+    }
+
+    /// The f32 VAE, built on first use.
+    fn vae_f32(&self) -> Result<&Vae> {
+        if let Some(v) = self.vae32.get() {
+            return Ok(v);
+        }
+        let v = Vae::new(VarBuilder::from_tensors(self.vae_weights.clone(), DType::F32, &self.device), &VaeConfig::sd()).map_err(ce)?;
+        Ok(self.vae32.get_or_init(|| v))
+    }
+
+    /// Run `f` (a VAE pass) with the f16 VAE, or again with the f32 one if f16 overflows.
+    fn vae_run(&self, f: impl Fn(&Vae) -> candle_core::Result<Tensor>) -> Result<Vec<f32>> {
+        with_fallback(
+            || self.vae_pass(&self.vae, &f),
+            || {
+                log::info!("the f16 VAE overflowed; redoing the frame in f32");
+                self.vae_pass(self.vae_f32()?, &f)
+            },
+        )
+    }
+
+    /// One VAE pass; `None` when an output isn't finite.
+    fn vae_pass(&self, vae: &Vae, f: &impl Fn(&Vae) -> candle_core::Result<Tensor>) -> Result<Option<Vec<f32>>> {
+        let out = to_cpu_vec(&f(vae).map_err(ce)?)?;
+        self.device.synchronize().map_err(ce)?;
+        Ok(out.iter().all(|v| v.is_finite()).then_some(out))
+    }
+
+    #[cfg(test)]
+    pub(super) fn timings(&self) -> StageTimes {
+        self.timings
     }
 
     /// Merge `loras` into the UNet and text encoder, always from the base weights. Each file's
@@ -387,49 +464,26 @@ impl Loaded {
                 }
             }
         }
-        Tensor::from_vec(planes, (1, 3, h, w), &self.device).and_then(|t| t.to_dtype(VAE_DTYPE)).map_err(ce)
+        Tensor::from_vec(planes, (1, 3, h, w), &self.device).map_err(ce)
     }
 
-    /// VAE-encode an image tensor (`[1, 3, h, w]`, −1…1) to scaled latents, in overlapping tiles
-    /// so large frames stay within GPU memory.
+    /// VAE-encode an image tensor (`[1, 3, h, w]`, −1…1) to scaled latents.
     fn encode_image(&self, img: &Tensor, seed: u64) -> Result<Tensor> {
         let (_, _, h, w) = img.dims4().map_err(ce)?;
         let (lh, lw) = (h / 8, w / 8);
-        let mut acc = Blend::new(4, lh, lw);
-        for (n, (y, x, th, tw)) in tiles2(lh, lw, VAE_TILE, VAE_OVERLAP).into_iter().enumerate() {
-            let part = img.narrow(2, y * 8, th * 8).and_then(|t| t.narrow(3, x * 8, tw * 8)).map_err(ce)?;
-            // The VAE samples its latent distribution: seed it so a seed gives the same image.
-            let _ = self.device.set_seed(seed.wrapping_add(n as u64));
-            let lat = self.vae.encode(&part).and_then(|d| d.sample()).map_err(ce)?;
-            acc.add(&to_cpu_vec(&lat)?, y, x, th, tw, VAE_OVERLAP);
-            self.device.synchronize().map_err(ce)?;
-        }
-        Tensor::from_vec(acc.finish(), (1, 4, lh, lw), &self.device).and_then(|t| t.affine(LATENT_SCALE, 0.0)).map_err(ce)
+        // The VAE samples its latent distribution: seeded, so a seed gives the same image.
+        let noise = self.noise(seed ^ 0x9E37_79B9_7F4A_7C15, (1, 4, lh, lw))?;
+        let v = self.vae_run(|vae| vae.encode(img, &noise))?;
+        Tensor::from_vec(v, (1, 4, lh, lw), &self.device).and_then(|t| t.affine(LATENT_SCALE, 0.0)).map_err(ce)
     }
 
-    /// Decode scaled latents to pixels, in overlapping tiles (see [`Self::encode_image`]).
+    /// Decode scaled latents to pixels.
     fn decode(&self, latents: &Tensor) -> Result<Rgba8> {
         let (_, _, lh, lw) = latents.dims4().map_err(ce)?;
         let (h, w) = (lh * 8, lw * 8);
-        let latents = latents.to_dtype(VAE_DTYPE).and_then(|l| l.affine(1.0 / LATENT_SCALE, 0.0)).map_err(ce)?;
-        self.device.synchronize().map_err(ce)?;
-        let mut acc = Blend::new(3, h, w);
-        for (y, x, th, tw) in tiles2(lh, lw, VAE_TILE, VAE_OVERLAP) {
-            let part = latents.narrow(2, y, th).and_then(|t| t.narrow(3, x, tw)).map_err(ce)?;
-            let img = self.vae.decode(&part).map_err(ce)?;
-            acc.add(&to_cpu_vec(&img)?, y * 8, x * 8, th * 8, tw * 8, VAE_OVERLAP * 8);
-            self.device.synchronize().map_err(ce)?;
-        }
-        let v = acc.finish();
-        let mut out = vec![255u8; w * h * 4];
-        for (i, px) in out.as_chunks_mut::<4>().0.iter_mut().enumerate() {
-            for c in 0..3 {
-                if let (Some(d), Some(s)) = (px.get_mut(c), v.get(c * w * h + i)) {
-                    *d = ((s * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
-                }
-            }
-        }
-        Rgba8::from_raw(w as u32, h as u32, out)
+        let latents = latents.to_dtype(DType::F32).and_then(|l| l.affine(1.0 / LATENT_SCALE, 0.0)).map_err(ce)?;
+        let v = self.vae_run(|vae| vae.decode(&latents))?;
+        rgba_from_planes(&v, w, h)
     }
 
     fn mask_tensor(&self, m: &Mask, w: usize, h: usize, binary: bool) -> Result<Tensor> {
@@ -448,17 +502,14 @@ impl Loaded {
         let turbo = self.family == Family::SdTurbo;
         let inpaint_model = self.in_channels == 9;
         let use_cfg = req.cfg > 1.0;
-        let unet = unet_2d::UNet2DConditionModel::new(
-            VarBuilder::from_tensors(self.unet_weights.clone(), UNET_DTYPE, &self.device),
-            self.in_channels,
-            4,
-            false,
-            unet_config(self.family, None),
-        )
-        .map_err(ce)?;
+        let unet = self.build_unet()?;
         progress.report(0.12, "Reading the prompt");
+        let t = std::time::Instant::now();
         let cond = self.encode_prompt(&req.prompt)?;
         let uncond = if use_cfg { Some(self.encode_prompt(&req.negative)?) } else { None };
+        self.device.synchronize().map_err(ce)?;
+        let mut times = StageTimes { prompt: ms_since(t), ..StageTimes::default() };
+        let t = std::time::Instant::now();
 
         let schedule = Schedule::sd();
         let kind = ScheduleKind::for_sampler(req.sampler, turbo);
@@ -472,6 +523,9 @@ impl Loaded {
         let noise = self.noise(req.seed, shape)?;
         let sigma0 = sigmas.first().copied().unwrap_or(1.0);
 
+        if init.is_some() || inpaint_model {
+            progress.report(0.14, "Encoding the frame");
+        }
         let init_t = init.map(|i| self.image_tensor(i)).transpose()?;
         let init_latent = init_t.as_ref().map(|t| self.encode_image(t, req.seed)).transpose()?;
         let mask_soft = req.mask.as_ref().map(|m| self.mask_tensor(m, lw, lh, false)).transpose()?;
@@ -490,13 +544,16 @@ impl Loaded {
                 }
                 (Some(img), None) => self.encode_image(&img.zeros_like().map_err(ce)?, req.seed)?,
                 (None, _) => {
-                    self.encode_image(&Tensor::zeros((1, 3, req.height as usize, req.width as usize), VAE_DTYPE, &self.device).map_err(ce)?, req.seed)?
+                    self.encode_image(&Tensor::zeros((1, 3, req.height as usize, req.width as usize), DType::F32, &self.device).map_err(ce)?, req.seed)?
                 }
             };
             Some(Tensor::cat(&[&m, &masked.to_dtype(DType::F32).map_err(ce)?], 1).map_err(ce)?)
         } else {
             None
         };
+        self.device.synchronize().map_err(ce)?;
+        times.encode = ms_since(t);
+        let t = std::time::Instant::now();
         // Latent blending: only for ordinary checkpoints with an init image and a mask.
         let blend = match (&init_latent, &mask_soft) {
             (Some(l), Some(m)) if !inpaint_model => Some((l.to_dtype(DType::F32).map_err(ce)?, m.clone())),
@@ -514,6 +571,7 @@ impl Loaded {
         let mut old: Option<Tensor> = None;
         for i in 0..steps {
             progress.check()?;
+            progress.report(0.15 + 0.8 * i as f32 / steps.max(1) as f32, &format!("Step {} of {steps}", i + 1));
             let sigma = sigmas.get(i).copied().unwrap_or(0.0);
             let t = schedule.timestep(sigma);
             let mut inp = x.affine(sampling::c_in(sigma), 0.0).map_err(ce)?;
@@ -551,7 +609,6 @@ impl Loaded {
             old = Some(denoised.clone());
             x = next;
             self.device.synchronize().map_err(ce)?;
-            progress.report(0.15 + 0.8 * (i + 1) as f32 / steps.max(1) as f32, &format!("Step {} of {steps}", i + 1));
             if (i + 1) % preview_every == 0 && i + 1 < steps {
                 // A small preview of what the model currently predicts.
                 let k = (lh.max(lw) / 16).max(1);
@@ -562,84 +619,40 @@ impl Loaded {
                 }
             }
         }
+        times.steps = ms_since(t);
         progress.report(0.96, "Decoding");
-        self.decode(&x)
+        let t = std::time::Instant::now();
+        let image = self.decode(&x)?;
+        times.decode = ms_since(t);
+        log::info!(
+            "generation {}×{}, {steps} steps: prompt {} ms, encode {} ms, steps {} ms, decode {} ms",
+            req.width,
+            req.height,
+            times.prompt,
+            times.encode,
+            times.steps,
+            times.decode
+        );
+        self.timings = times;
+        Ok(image)
     }
+}
+
+/// Opaque pixels from planar RGB in −1…1.
+fn rgba_from_planes(v: &[f32], w: usize, h: usize) -> Result<Rgba8> {
+    let mut out = vec![255u8; w * h * 4];
+    for (i, px) in out.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+        for c in 0..3 {
+            if let (Some(d), Some(s)) = (px.get_mut(c), v.get(c * w * h + i)) {
+                *d = ((s * 0.5 + 0.5) * 255.0).round().clamp(0.0, 255.0) as u8;
+            }
+        }
+    }
+    Rgba8::from_raw(w as u32, h as u32, out)
 }
 
 fn to_cpu_vec(t: &Tensor) -> Result<Vec<f32>> {
     t.to_dtype(DType::F32).and_then(|t| t.to_device(&Device::Cpu)).and_then(|t| t.flatten_all()).and_then(|t| t.to_vec1::<f32>()).map_err(ce)
-}
-
-/// Tile origins along one axis: `tile`-long windows overlapping by at least `overlap`.
-fn tile_starts(len: usize, tile: usize, overlap: usize) -> Vec<usize> {
-    if len <= tile {
-        return vec![0];
-    }
-    let step = tile.saturating_sub(overlap).max(1);
-    let mut out: Vec<usize> = (0..).map(|i| i * step).take_while(|&s| s + tile < len).collect();
-    out.push(len - tile);
-    out
-}
-
-/// `(y, x, height, width)` of every tile covering a `h × w` grid.
-fn tiles2(h: usize, w: usize, tile: usize, overlap: usize) -> Vec<(usize, usize, usize, usize)> {
-    let (th, tw) = (h.min(tile), w.min(tile));
-    tile_starts(h, tile, overlap).into_iter().flat_map(|y| tile_starts(w, tile, overlap).into_iter().map(move |x| (y, x, th, tw))).collect()
-}
-
-/// Feathered accumulation of planar (`c × h × w`) tiles into one image.
-struct Blend {
-    c: usize,
-    h: usize,
-    w: usize,
-    sum: Vec<f32>,
-    weight: Vec<f32>,
-}
-
-impl Blend {
-    fn new(c: usize, h: usize, w: usize) -> Blend {
-        Blend { c, h, w, sum: vec![0.0; c * h * w], weight: vec![0.0; h * w] }
-    }
-
-    /// Ramp weights over `ramp` pixels at tile edges that lie inside the image.
-    fn add(&mut self, tile: &[f32], y0: usize, x0: usize, th: usize, tw: usize, ramp: usize) {
-        let edge = |i: usize, len: usize, at_start: bool, at_end: bool| -> f32 {
-            let r = ramp.max(1) as f32;
-            let a = if at_start { 1.0 } else { ((i as f32 + 0.5) / r).min(1.0) };
-            let b = if at_end { 1.0 } else { ((len - i) as f32 - 0.5) / r };
-            a.min(b.min(1.0)).max(1e-3)
-        };
-        for ty in 0..th {
-            let wy = edge(ty, th, y0 == 0, y0 + th >= self.h);
-            for tx in 0..tw {
-                let wgt = wy * edge(tx, tw, x0 == 0, x0 + tw >= self.w);
-                let (y, x) = (y0 + ty, x0 + tx);
-                if y >= self.h || x >= self.w {
-                    continue;
-                }
-                if let Some(acc) = self.weight.get_mut(y * self.w + x) {
-                    *acc += wgt;
-                }
-                for c in 0..self.c {
-                    if let (Some(d), Some(v)) = (self.sum.get_mut((c * self.h + y) * self.w + x), tile.get((c * th + ty) * tw + tx)) {
-                        *d += wgt * v;
-                    }
-                }
-            }
-        }
-    }
-
-    fn finish(mut self) -> Vec<f32> {
-        let plane = self.h * self.w;
-        for (i, v) in self.sum.iter_mut().enumerate() {
-            let wgt = self.weight.get(i % plane.max(1)).copied().unwrap_or(0.0);
-            if wgt > 0.0 {
-                *v /= wgt;
-            }
-        }
-        self.sum
-    }
 }
 
 /// A standalone VAE file: original (LDM) names, or already in the diffusers layout.
@@ -659,7 +672,7 @@ fn read_vae_file(path: &Path, device: &Device) -> Result<HashMap<String, Tensor>
         if targets.is_empty() {
             continue;
         }
-        let t = read_tensor(&h, &mut f, &key, VAE_DTYPE, &Device::Cpu)?;
+        let t = read_tensor(&h, &mut f, &key, VAE_WEIGHT_DTYPE, &Device::Cpu)?;
         for target in targets {
             out.insert(target.name, apply_transform(&t, target.transform)?.to_device(device).map_err(ce)?);
         }
@@ -674,10 +687,18 @@ fn build_clip(weights: &HashMap<String, Tensor>, family: Family, device: &Device
     clip::ClipTextTransformer::new(VarBuilder::from_tensors(weights.clone(), CLIP_DTYPE, device), &clip_config(family))
 }
 
+/// The first attempt's result, or the second's when the first returns `None`.
+fn with_fallback<T>(first: impl FnOnce() -> Result<Option<T>>, second: impl FnOnce() -> Result<Option<T>>) -> Result<T> {
+    match first()? {
+        Some(v) => Ok(v),
+        None => second()?.ok_or_else(|| MlError::Other("generation failed: the VAE returned invalid values".into())),
+    }
+}
+
 /// Refuse to load a model that can't fit, instead of letting macOS swap to a crawl.
 fn check_memory(family: Family) -> Result<()> {
     let Some(total) = crate::system::physical_memory() else { return Ok(()) };
-    // UNet in f16, text encoder and VAE in f32, plus working memory for a 512×512 frame.
+    // UNet and VAE in f16, text encoder in f32, plus working memory for a 512×512 frame.
     let need: u64 = match family {
         Family::SdTurbo => 6 << 30,
         _ => 4 << 30,
@@ -693,22 +714,104 @@ mod tests {
     use super::*;
 
     #[test]
-    fn tiles_cover_and_blend_seamlessly() {
-        assert_eq!(tile_starts(64, 32, 8), vec![0, 24, 32]);
-        assert_eq!(tile_starts(20, 32, 8), vec![0]);
-        assert_eq!(tile_starts(128, 32, 8), vec![0, 24, 48, 72, 96]);
-        // A constant image stays constant through the feathered blend.
-        let (h, w) = (40, 72);
-        let mut b = Blend::new(2, h, w);
-        for (y, x, th, tw) in tiles2(h, w, 32, 8) {
-            b.add(&vec![0.25; 2 * th * tw], y, x, th, tw, 8);
-        }
-        assert!(b.finish().iter().all(|v| (v - 0.25).abs() < 1e-5));
+    fn an_overflowing_f16_pass_falls_back_to_f32() {
+        let calls = std::cell::Cell::new(0);
+        let second = || {
+            calls.set(calls.get() + 1);
+            Ok(Some(2))
+        };
+        assert_eq!(with_fallback(|| Ok(Some(1)), second).unwrap(), 1);
+        assert_eq!(calls.get(), 0, "no fallback when the first pass is finite");
+        assert_eq!(with_fallback(|| Ok(None), second).unwrap(), 2);
+        assert_eq!(calls.get(), 1);
+        assert!(with_fallback::<i32>(|| Ok(None), || Ok(None)).unwrap_err().to_string().contains("invalid values"));
+        assert!(with_fallback::<i32>(|| Err(MlError::Other("oom".into())), || Ok(Some(2))).is_err(), "errors don't retry");
+        let px = rgba_from_planes(&[-1.0, 1.0, 0.0, 0.0, 9.0, -9.0], 2, 1).unwrap();
+        assert_eq!(px.data, vec![0, 128, 255, 255, 255, 128, 0, 255]);
     }
 
-    /// The UNet's denoised prediction lands near a real image's latent at every noise level.
-    /// A weight change re-merges from the cached factors without reading the file again, and the
-    /// empty stack restores the base weights.
+    /// A test scene: sky gradient, striped ground and a disc, so edges and flat areas both show.
+    fn scene(w: usize, h: usize) -> Rgba8 {
+        let mut img = Rgba8::new(w as u32, h as u32).unwrap();
+        for (i, px) in img.data.as_chunks_mut::<4>().0.iter_mut().enumerate() {
+            let (x, y) = (i % w, i / w);
+            let (dx, dy) = (x as f32 - w as f32 * 0.7, y as f32 - h as f32 * 0.3);
+            let rgb = if dx * dx + dy * dy < (w.min(h) as f32 * 0.12).powi(2) {
+                [250, 210, 60]
+            } else if y < h * 6 / 10 {
+                [90 + (y * 100 / h) as u8, 140 + (y * 60 / h) as u8, 230]
+            } else if (x / 12 + y / 12) % 2 == 0 {
+                [60, 120 + (x * 80 / w) as u8, 50]
+            } else {
+                [110, 80, 40]
+            };
+            px.copy_from_slice(&[rgb[0], rgb[1], rgb[2], 255]);
+        }
+        img
+    }
+
+    fn mean_diff(a: &Rgba8, b: &Rgba8) -> f64 {
+        let n = (a.width * a.height) as f64 * 3.0;
+        a.data
+            .as_chunks::<4>()
+            .0
+            .iter()
+            .zip(b.data.as_chunks::<4>().0)
+            .map(|(p, q)| (0..3).map(|c| (f64::from(p[c]) - f64::from(q[c])).abs()).sum::<f64>())
+            .sum::<f64>()
+            / n
+    }
+
+    /// The f16 VAE takes whole frames up to 1024×1024 in one pass without overflowing,
+    /// matches the same VAE in f32, and round-trips an image closely. Prints the timings; writes
+    /// `target/native-vae-*.png`. (The old path, candle's AutoEncoderKL in f32 and 256 px tiles,
+    /// took 10.0 s to encode and 20.6 s to decode 512×512 on an M4, with a round-trip error of
+    /// 17.8 levels.)
+    #[test]
+    #[ignore = "needs real model files (PHOTOKA_MODELS_DIR)"]
+    fn real_vae_single_pass() {
+        let dir = std::env::var_os("PHOTOKA_MODELS_DIR").unwrap();
+        let store = crate::store::ModelStore::new(PathBuf::from(dir));
+        let req = crate::params::GenerateRequest {
+            checkpoint: "v1-5-pruned-emaonly-fp16.safetensors".into(),
+            vae: None,
+            loras: vec![],
+            prompt: String::new(),
+            negative: String::new(),
+            steps: 4,
+            cfg: 7.0,
+            seed: 1,
+            sampler: crate::params::Sampler::Euler,
+            strength: 1.0,
+            width: 512,
+            height: 512,
+            init: None,
+            mask: None,
+        };
+        let l = Loaded::load(&super::super::resolve(&store, &req).unwrap(), &crate::NoProgress).unwrap();
+        let target = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("../../target");
+        for (w, h) in [(512usize, 512usize), (768, 512), (768, 768), (1024, 1024)] {
+            let img = scene(w, h);
+            let t = std::time::Instant::now();
+            let lat = l.encode_image(&l.image_tensor(&img).unwrap(), 1).unwrap();
+            let enc_ms = t.elapsed().as_millis();
+            let unscaled = lat.affine(1.0 / LATENT_SCALE, 0.0).unwrap();
+            let decode_with = |vae: &Vae| {
+                let v = l.vae_pass(vae, &|vae: &Vae| vae.decode(&unscaled)).unwrap();
+                rgba_from_planes(&v.expect("the VAE overflowed"), w, h).unwrap()
+            };
+            let t = std::time::Instant::now();
+            let ours = decode_with(&l.vae);
+            let dec_ms = t.elapsed().as_millis();
+            std::fs::write(target.join(format!("native-vae-{w}x{h}.png")), ours.to_png().unwrap()).unwrap();
+            let rt = mean_diff(&ours, &img);
+            let d = if w * h <= 768 * 512 { mean_diff(&ours, &decode_with(l.vae_f32().unwrap())) } else { 0.0 };
+            eprintln!("{w}×{h}: encode {enc_ms} ms, decode {dec_ms} ms; f16 vs f32 {d:.2} levels; round trip {rt:.2}");
+            assert!(d < 2.0, "{w}×{h}: f16 differs from f32 by {d}");
+            assert!(rt < 8.0, "{w}×{h}: round trip error {rt}");
+        }
+    }
+
     #[test]
     #[ignore = "needs real model files (PHOTOKA_MODELS_DIR)"]
     fn lora_weight_changes_reuse_cached_factors() {

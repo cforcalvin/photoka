@@ -1,5 +1,5 @@
 <p align="center">
-  <img alt="" src="assets/app-icon/photoka-small.svg" width="96">
+  <img alt="" src="assets/app-icon/photoka.svg" width="96">
 </p>
 
 <h1 align="center">Photoka</h1>

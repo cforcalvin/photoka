@@ -2712,3 +2712,9 @@ ai	Sampler	取樣器
 	{used} used, {free} free	已使用 {used}，可用 {free}
 	· inpainting the masked area	· 局部重繪遮色區域
 	· whole frame	· 整個框
+	Lock frame to view	將框鎖定到檢視
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	框在螢幕上保持不動，你可以縮放和平移其下方的影像，並一律按框的尺寸生成
+	Zoom and pan the image under the frame	縮放和平移框下方的影像
+	Zoom out to fit the frame	縮小檢視以容納框
+	Zoom in to fit the frame	放大檢視以容納框
+	{w} × {h} from {fw} × {fh} px	從 {fw} × {fh} px 生成 {w} × {h}

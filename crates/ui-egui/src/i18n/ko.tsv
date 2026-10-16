@@ -3288,3 +3288,9 @@ ai	Sampler	샘플러
 	{used} used, {free} free	{used} 사용, {free} 여유
 	· inpainting the masked area	· 마스크 영역 인페인팅
 	· whole frame	· 프레임 전체
+	Lock frame to view	프레임을 보기에 고정
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	프레임이 화면에 고정된 채로 아래 이미지를 확대/축소하고 이동할 수 있으며, 항상 프레임 크기로 생성합니다
+	Zoom and pan the image under the frame	프레임 아래 이미지 확대/축소 및 이동
+	Zoom out to fit the frame	프레임이 맞도록 축소하세요
+	Zoom in to fit the frame	프레임이 맞도록 확대하세요
+	{w} × {h} from {fw} × {fh} px	{fw} × {fh} px에서 {w} × {h}

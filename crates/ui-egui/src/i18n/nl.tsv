@@ -3874,3 +3874,9 @@ ai	Sampler	Sampler
 	{used} used, {free} free	{used} gebruikt, {free} vrij
 	· inpainting the masked area	· gemaskeerd gebied wordt opnieuw gegenereerd
 	· whole frame	· heel kader
+	Lock frame to view	Kader aan weergave vastzetten
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	Het kader blijft op het scherm staan terwijl u de afbeelding eronder zoomt en verschuift, en genereert altijd op zijn eigen formaat
+	Zoom and pan the image under the frame	Afbeelding onder het kader zoomen en verschuiven
+	Zoom out to fit the frame	Zoom uit zodat het kader past
+	Zoom in to fit the frame	Zoom in zodat het kader past
+	{w} × {h} from {fw} × {fh} px	{w} × {h} uit {fw} × {fh} px

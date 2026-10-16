@@ -2801,3 +2801,9 @@ ai	Sampler	Muestreador
 	{used} used, {free} free	{used} usados, {free} libres
 	· inpainting the masked area	· regenerando el área enmascarada
 	· whole frame	· marco completo
+	Lock frame to view	Fijar marco a la vista
+	The frame stays put on screen while you zoom and pan the image under it, and always generates at its size	El marco se queda fijo en pantalla mientras acercas y desplazas la imagen debajo, y siempre genera a su tamaño
+	Zoom and pan the image under the frame	Acercar y desplazar la imagen bajo el marco
+	Zoom out to fit the frame	Aleja la vista para ajustar el marco
+	Zoom in to fit the frame	Acerca la vista para ajustar el marco
+	{w} × {h} from {fw} × {fh} px	{w} × {h} desde {fw} × {fh} px

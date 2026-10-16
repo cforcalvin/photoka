@@ -192,13 +192,16 @@ impl Tokens {
 
     pub fn for_kind(kind: ThemeKind) -> Self {
         match kind {
-            // Sampled from Photoshop 2026's default brightness (raw display values).
+            // Photoshop 2026's default brightness (raw display values), with the backgrounds
+            // tinted slightly blue at the same luminance (Photoka's look).
             ThemeKind::ProMedium => Tokens {
                 kind,
-                chrome: Color32::from_rgb(83, 83, 83),
-                dock: Color32::from_rgb(66, 66, 66),
-                card: Color32::from_rgb(83, 83, 83),
-                card_border: Color32::from_rgb(66, 66, 66),
+                chrome: Color32::from_rgb(75, 84, 99),
+                canvas: Color32::from_rgb(34, 41, 51),
+                canvas_dot: Color32::from_rgb(34, 41, 51),
+                dock: Color32::from_rgb(57, 66, 81),
+                card: Color32::from_rgb(75, 84, 99),
+                card_border: Color32::from_rgb(57, 66, 81),
                 field: Color32::from_rgb(69, 69, 69),
                 field_border: Color32::from_rgb(104, 104, 104),
                 hover: Color32::from_rgb(98, 98, 98),
@@ -208,8 +211,8 @@ impl Tokens {
                 text_faint: Color32::from_rgb(160, 160, 160),
                 icon: Color32::from_rgb(226, 226, 226),
                 accent_soft: Color32::from_rgb(110, 110, 110),
-                separator: Color32::from_rgb(62, 62, 62),
-                tab_strip: Color32::from_rgb(74, 74, 74),
+                separator: Color32::from_rgb(54, 62, 77),
+                tab_strip: Color32::from_rgb(66, 75, 90),
                 row_selected: Color32::from_rgb(107, 107, 107),
                 ..Tokens::for_kind(ThemeKind::Pro)
             },
@@ -1096,7 +1099,7 @@ mod tests {
         assert_eq!(ThemeKind::from_name("Solarized Dark"), Some(ThemeKind::SolarizedDark));
         assert_eq!(ThemeKind::from_name("solarized"), Some(ThemeKind::SolarizedDark));
         let m = Tokens::for_kind(ThemeKind::ProMedium);
-        assert!(m.pro && m.dark() && m.kind == ThemeKind::ProMedium && m.card == Color32::from_rgb(83, 83, 83));
+        assert!(m.pro && m.dark() && m.kind == ThemeKind::ProMedium && m.card == Color32::from_rgb(75, 84, 99));
         let s = Tokens::for_kind(ThemeKind::SolarizedDark);
         assert!(s.dark() && !s.bevel && s.kind == ThemeKind::SolarizedDark && s.card == Color32::from_rgb(7, 54, 66));
         assert_eq!(ThemeKind::from_name("neon"), None);

@@ -1,9 +1,8 @@
-Photoka app icon (photoka.svg, photoka-small.svg and every file derived from them in
-this directory: photoka-1024.png, photoka.icns, photoka.ico, hicolor/).
+Photoka app icon (photoka.svg and every file derived from it in this directory:
+photoka-1024.png, photoka.icns, hicolor/).
 
-Original artwork made for PhotoCraft (the upstream project) by its owner: an engraving-style drawing created
-in ArtCraft, then vectorised. No third-party material. Licensed like the rest of Photoka,
-under either of
+Original artwork supplied for Photoka by its maintainer. No third-party material. Licensed like
+the rest of Photoka, under either of
 
   * Apache License, Version 2.0 (https://www.apache.org/licenses/LICENSE-2.0)
   * MIT license (https://opensource.org/licenses/MIT)
