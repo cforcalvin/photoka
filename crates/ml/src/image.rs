@@ -5,6 +5,8 @@ use crate::{MlError, Result};
 
 /// Largest side the engines accept (SD 1.5 is trained at 512; 2048 is already 16× the pixels).
 pub const MAX_SIDE: u32 = 2048;
+/// Largest side after AI upscale (4× of [`MAX_SIDE`]).
+pub const MAX_UPSCALE_SIDE: u32 = 8192;
 
 /// Straight (not premultiplied) RGBA, 8 bits per channel, row-major.
 #[derive(Clone, Debug, PartialEq, Eq)]
@@ -61,6 +63,21 @@ impl Rgba8 {
     pub fn decode(bytes: &[u8]) -> Result<Rgba8> {
         let img = photoka_codecs::decode(bytes).map_err(|e| MlError::Other(format!("could not decode the generated image: {e}")))?;
         Rgba8::from_raw(img.width(), img.height(), img.to_rgba8())
+    }
+
+    /// Like [`Self::decode`], but allows sides up to [`MAX_UPSCALE_SIDE`] (ComfyUI Real-ESRGAN output).
+    pub fn decode_upscaled(bytes: &[u8]) -> Result<Rgba8> {
+        let img = photoka_codecs::decode(bytes).map_err(|e| MlError::Other(format!("could not decode the upscaled image: {e}")))?;
+        let (width, height) = (img.width(), img.height());
+        if width == 0 || height == 0 || width > MAX_UPSCALE_SIDE || height > MAX_UPSCALE_SIDE {
+            return Err(MlError::BadParams(format!("upscaled size {width}×{height} is outside 1…{MAX_UPSCALE_SIDE}")));
+        }
+        let rgba = img.to_rgba8();
+        let n = width as usize * height as usize;
+        if rgba.len() != n * 4 {
+            return Err(MlError::BadParams(format!("RGBA data is {} bytes, expected {}", rgba.len(), n * 4)));
+        }
+        Ok(Rgba8 { width, height, data: rgba })
     }
 }
 

@@ -30,7 +30,7 @@ pub fn log_path() -> PathBuf {
 pub fn model_paths_yaml(models_dir: &Path) -> String {
     let base = models_dir.display().to_string().replace('\'', "''");
     format!(
-        "# Written by Photoka: ComfyUI reads models from Photoka's models folder.\nphotoka:\n    base_path: '{base}'\n    is_default: true\n    checkpoints: checkpoints/\n    loras: loras/\n    vae: vae/\n    embeddings: embeddings/\n"
+        "# Written by Photoka: ComfyUI reads models from Photoka's models folder.\nphotoka:\n    base_path: '{base}'\n    is_default: true\n    checkpoints: checkpoints/\n    loras: loras/\n    vae: vae/\n    embeddings: embeddings/\n    upscale_models: upscale_models/\n"
     )
 }
 

@@ -216,6 +216,37 @@ impl Client {
     }
 
     /// Run one generation: upload the frame, queue the workflow, follow it, fetch the image.
+    /// Run Real-ESRGAN (or another file in `upscale_models/`) on `image` via ComfyUI.
+    pub fn upscale(&self, store: &ModelStore, model: &str, image: &Rgba8, progress: &dyn Progress) -> Result<Rgba8> {
+        let _ = store.existing(ModelKind::Upscale, model)?;
+        if image.width == 0 || image.height == 0 {
+            return Err(MlError::BadParams("nothing to upscale".into()));
+        }
+        let client_id = new_client_id();
+        progress.report(0.01, "Sending the image to ComfyUI");
+        let name = self.upload_image(&format!("{client_id}-upscale.png"), &image.to_png()?)?;
+        let wf = workflow::build_upscale(model, &name);
+        let mut ws = match self.connect_ws(&client_id) {
+            Ok(ws) => Some(ws),
+            Err(e) => {
+                log::info!("ComfyUI websocket unavailable ({e}); polling instead");
+                None
+            }
+        };
+        let prompt_id = self.queue_prompt(&wf, &client_id)?;
+        progress.report(0.05, "Upscaling in ComfyUI");
+        let waited = self.wait(&mut ws, &prompt_id, progress);
+        if let Some(mut ws) = ws {
+            let _ = ws.close(None);
+        }
+        let entry = waited?;
+        let img = entry
+            .pointer(&format!("/outputs/{}/images/0", workflow::UPSCALE_OUTPUT_NODE))
+            .ok_or_else(|| MlError::Comfy("ComfyUI finished without an upscaled image".into()))?;
+        progress.report(0.98, "Fetching the result");
+        Rgba8::decode_upscaled(&self.view(img)?)
+    }
+
     pub fn generate(&self, store: &ModelStore, req: &GenerateRequest, progress: &dyn Progress) -> Result<GenerateOutput> {
         req.validate()?;
         let started = Instant::now();

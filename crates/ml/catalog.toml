@@ -202,6 +202,38 @@ license = "MIT"
 license_url = "https://huggingface.co/stabilityai/sd-vae-ft-mse-original"
 
 [[model]]
+id = "realesrgan-x2plus"
+name = "Real-ESRGAN x2plus"
+description = "AI upscale 2×. Lighter on memory; recommended on 8–12 GB Macs. Needs ComfyUI."
+kind = "upscale"
+family = "upscale"
+tags = ["upscale", "x2", "recommended"]
+source = "huggingface"
+url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.2.1/RealESRGAN_x2plus.pth"
+page = "https://github.com/xinntao/Real-ESRGAN"
+file_name = "RealESRGAN_x2plus.pth"
+size = 67061725
+sha256 = "49fafd45f8fd7aa8d31ab2a22d14d91b536c34494a5cfe31eb5d89c2fa266abb"
+license = "BSD-3-Clause"
+license_url = "https://github.com/xinntao/Real-ESRGAN/blob/master/LICENSE"
+
+[[model]]
+id = "realesrgan-x4plus"
+name = "Real-ESRGAN x4plus"
+description = "AI upscale 4×. Best quality when you have 16 GB+ memory. Needs ComfyUI."
+kind = "upscale"
+family = "upscale"
+tags = ["upscale", "x4"]
+source = "huggingface"
+url = "https://github.com/xinntao/Real-ESRGAN/releases/download/v0.1.0/RealESRGAN_x4plus.pth"
+page = "https://github.com/xinntao/Real-ESRGAN"
+file_name = "RealESRGAN_x4plus.pth"
+size = 67040989
+sha256 = "4fa0d38905f75ac06eb49a7951b426670021be3018265fd191d2125df9d682f1"
+license = "BSD-3-Clause"
+license_url = "https://github.com/xinntao/Real-ESRGAN/blob/master/LICENSE"
+
+[[model]]
 id = "clip-tokenizer"
 name = "CLIP tokenizer"
 description = "Turns prompts into tokens. Needed by the built-in engine (2 MB); downloaded with the first model."

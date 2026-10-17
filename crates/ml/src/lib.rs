@@ -25,6 +25,7 @@ pub mod keymap;
 pub mod lora_keys;
 pub mod native;
 pub mod params;
+pub mod recommend;
 pub mod safetensors_header;
 pub mod sampling;
 pub mod store;

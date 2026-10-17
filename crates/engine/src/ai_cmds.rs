@@ -101,7 +101,9 @@ fn kind_param(cmd: &str, p: &Value) -> Result<Option<ModelKind>> {
         None | Some(Value::Null) => Ok(None),
         Some(v) => {
             let s = v.as_str().ok_or_else(|| bad(cmd, "`kind` must be a string"))?;
-            ModelKind::parse(s).map(Some).ok_or_else(|| bad(cmd, format!("unknown kind `{s}` (checkpoint, lora, vae, embedding, tokenizer)")))
+            ModelKind::parse(s).map(Some).ok_or_else(|| {
+                bad(cmd, format!("unknown kind `{s}` (checkpoint, lora, vae, embedding, tokenizer, upscale)"))
+            })
         }
     }
 }
@@ -110,17 +112,30 @@ fn catalog_list(s: &mut Session, _: &Value) -> Result<Value> {
     let c = catalog()?;
     let store = s.ai.store();
     let accepted = store.accepted_licenses();
-    let models: Vec<Value> = c
-        .models
-        .iter()
-        .map(|m| {
+    let hw = photoka_ml::system::HardwareProfile::probe(&s.ai.models_dir);
+    let installed = |e: &photoka_ml::catalog::CatalogEntry| store.is_installed(e.kind, &e.file_name);
+    let best_ckpt = photoka_ml::recommend::best_checkpoint_ids(&c.models, &hw, &installed, 2);
+    let best_up = photoka_ml::recommend::best_upscale_ids(&c.models, &hw, 1);
+    let pack = photoka_ml::recommend::starter_pack(&c.models, &hw, &installed);
+    let order = photoka_ml::recommend::rank_indices(&c.models, &hw, &installed);
+    let models: Vec<Value> = order
+        .into_iter()
+        .map(|i| {
+            let m = &c.models[i];
             let dest = store.path_for(m.kind, &m.file_name).ok();
+            let fits_ram = photoka_ml::recommend::fits_ram(m, &hw);
+            let fits_disk = photoka_ml::recommend::fits_disk(m, &hw);
+            let recommended_for_hw = best_ckpt.iter().any(|id| id == &m.id) || best_up.iter().any(|id| id == &m.id);
             let mut v = serde_json::to_value(m).unwrap_or(Value::Null);
             if let Some(o) = v.as_object_mut() {
-                o.insert("installed".into(), json!(store.is_installed(m.kind, &m.file_name)));
+                o.insert("installed".into(), json!(installed(m)));
                 o.insert("licenseAccepted".into(), json!(accepted.contains(&m.id)));
                 o.insert("downloading".into(), json!(s.ai.is_downloading(&m.id)));
                 o.insert("partialBytes".into(), json!(dest.as_deref().and_then(photoka_ml::download::partial_len)));
+                o.insert("fitsRam".into(), json!(fits_ram));
+                o.insert("fitsDisk".into(), json!(fits_disk));
+                o.insert("recommendedForHw".into(), json!(recommended_for_hw));
+                o.insert("recommendReason".into(), json!(photoka_ml::recommend::recommend_reason(m, &hw)));
             }
             v
         })
@@ -130,6 +145,47 @@ fn catalog_list(s: &mut Session, _: &Value) -> Result<Value> {
         "models": models,
         "civitaiKey": photoka_ml::keychain::civitai_key().is_some(),
         "modelsDir": s.ai.models_dir,
+        "hardware": hw.to_json(),
+        "starterPack": pack.as_ref().map(|p| json!({
+            "ids": p.ids,
+            "totalBytes": p.total_bytes,
+        })),
+        "upscaleDefaults": {
+            "scale": hw.default_upscale_scale(),
+            "tile": hw.default_upscale_tile(),
+        },
+    }))
+}
+
+/// The starter pack's licences. With `accept: true` they're accepted and `toDownload` lists the
+/// ids still missing; the caller downloads each with `ai.models.download` (one job each).
+fn accept_starter_pack(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "ai.models.acceptStarterPack";
+    let c = catalog()?;
+    let store = s.ai.store();
+    let hw = photoka_ml::system::HardwareProfile::probe(&s.ai.models_dir);
+    let installed = |e: &photoka_ml::catalog::CatalogEntry| store.is_installed(e.kind, &e.file_name);
+    let pack = photoka_ml::recommend::starter_pack(&c.models, &hw, &installed)
+        .ok_or_else(|| bad(CMD, "no starter pack fits this Mac’s free disk; free some space or pick a model manually"))?;
+    let members: Vec<&photoka_ml::catalog::CatalogEntry> = pack.ids.iter().filter_map(|id| c.get(id)).collect();
+    if p.get("accept").and_then(Value::as_bool) != Some(true) {
+        let list = members.iter().map(|m| format!("{} ({})", m.name, m.license)).collect::<Vec<_>>().join("; ");
+        return Err(bad(CMD, format!("the starter pack is {list}; read the licences, then pass `accept: true`")));
+    }
+    let mut to_download = Vec::new();
+    for m in &members {
+        if store.is_installed(m.kind, &m.file_name) {
+            continue;
+        }
+        store.accept_license(&m.id).map_err(ml_err)?;
+        to_download.push(m.id.clone());
+    }
+    let licenses: Vec<Value> = members.iter().map(|m| json!({"id": m.id, "name": m.name, "license": m.license, "licenseUrl": m.license_url})).collect();
+    Ok(json!({
+        "ids": pack.ids,
+        "totalBytes": pack.total_bytes,
+        "licenses": licenses,
+        "toDownload": to_download,
     }))
 }
 
@@ -282,7 +338,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "List Suggested AI Models",
             menu: &[],
             shortcut: None,
-            params: "{} → {models:[{id,name,description,kind,family,tags,size,license,licenseUrl,installed,licenseAccepted,downloading,partialBytes,…}],civitaiKey,modelsDir}",
+            params: "{} → {models:[{…,fitsRam,fitsDisk,recommendedForHw,recommendReason}],hardware,starterPack,upscaleDefaults,civitaiKey,modelsDir} (Suggested order is ranked for this Mac)",
             enabled: always,
             run: catalog_list,
             journal: false,
@@ -318,11 +374,21 @@ pub fn specs() -> Vec<CommandSpec> {
             journal: false,
         },
         CommandSpec {
+            id: "ai.models.acceptStarterPack",
+            label: "Accept AI Starter Pack Licenses",
+            menu: &[],
+            shortcut: None,
+            params: r#"{"accept":true} → accepts the licences of the hardware-sized starter pack → {ids,totalBytes,licenses,toDownload}; then ai.models.download each id in toDownload. Without accept: an error listing the licences"#,
+            enabled: always,
+            run: accept_starter_pack,
+            journal: false,
+        },
+        CommandSpec {
             id: "ai.models.import",
             label: "Import AI Model",
             menu: &[],
             shortcut: None,
-            params: r#"{"path":".safetensors file","kind":"checkpoint"|"lora"|"vae"|"embedding"? (detected when omitted)} → background job"#,
+            params: r#"{"path":".safetensors|.pth file","kind":"checkpoint"|"lora"|"vae"|"embedding"|"upscale"? (detected when omitted)} → background job"#,
             enabled: always,
             run: import,
             journal: false,
@@ -332,7 +398,7 @@ pub fn specs() -> Vec<CommandSpec> {
             label: "Delete AI Model",
             menu: &[],
             shortcut: None,
-            params: r#"{"kind":"checkpoint"|"lora"|"vae"|"embedding"|"tokenizer","file":file name}"#,
+            params: r#"{"kind":"checkpoint"|"lora"|"vae"|"embedding"|"tokenizer"|"upscale","file":file name}"#,
             enabled: always,
             run: delete,
             journal: false,
@@ -389,8 +455,29 @@ mod tests {
         let models = c["models"].as_array().unwrap();
         assert!(models.len() >= 9);
         assert!(models.iter().all(|m| m["installed"] == json!(false) && m["licenseAccepted"] == json!(false)));
+        assert!(c.get("hardware").is_some());
+        assert!(c.get("starterPack").is_some());
+        assert!(models.iter().any(|m| m["recommendedForHw"] == json!(true)));
+        assert!(models.iter().all(|m| m.get("fitsRam").is_some() && m.get("recommendReason").is_some()));
         let l = s.execute("ai.models.list", json!({})).unwrap();
         assert_eq!(l["models"], json!([]));
+        let _ = std::fs::remove_dir_all(dir);
+    }
+
+    #[test]
+    fn starter_pack_needs_explicit_acceptance_and_downloads_nothing() {
+        let (mut s, dir) = session("starter");
+        let e = s.execute("ai.models.acceptStarterPack", json!({})).unwrap_err().to_string();
+        assert!(e.contains("accept") || e.contains("free"), "{e}");
+        assert!(s.execute("ai.models.acceptStarterPack", json!({"accept": "yes"})).is_err());
+        if let Ok(r) = s.execute("ai.models.acceptStarterPack", json!({"accept": true})) {
+            let ids: Vec<&str> = r["toDownload"].as_array().unwrap().iter().filter_map(Value::as_str).collect();
+            assert!(!ids.is_empty(), "{r}");
+            let accepted = s.ai.store().accepted_licenses();
+            assert!(ids.iter().all(|id| accepted.contains(*id)));
+            let l = s.execute("ai.models.list", json!({})).unwrap();
+            assert_eq!(l["models"], json!([]), "accepting licences downloads nothing");
+        }
         let _ = std::fs::remove_dir_all(dir);
     }
 

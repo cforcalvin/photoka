@@ -4958,7 +4958,7 @@ dependencies = [
 
 [[package]]
 name = "photoka"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "arboard",
  "async-io",
@@ -4999,7 +4999,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-affinity"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "crc32fast",
  "flate2",
@@ -5009,7 +5009,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-algo"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-geom",
@@ -5022,7 +5022,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-automation"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "cap-std",
@@ -5044,7 +5044,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-cli"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-automation",
  "photoka-codecs",
@@ -5057,7 +5057,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-cms"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "moxcms",
  "rayon",
@@ -5065,7 +5065,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-codecs"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "exr",
  "flate2",
@@ -5086,7 +5086,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-color"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-cms",
  "serde",
@@ -5094,7 +5094,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-compose"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "criterion",
  "photoka-color",
@@ -5109,7 +5109,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-doc"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-geom",
@@ -5120,7 +5120,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-engine"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "blake3",
  "exr",
@@ -5155,7 +5155,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-format"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "blake3",
  "crc32fast",
@@ -5175,14 +5175,14 @@ dependencies = [
 
 [[package]]
 name = "photoka-geom"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "serde",
 ]
 
 [[package]]
 name = "photoka-gpu"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "half",
  "log",
@@ -5199,14 +5199,14 @@ dependencies = [
 
 [[package]]
 name = "photoka-heif"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "heic-rs",
 ]
 
 [[package]]
 name = "photoka-io"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "blake3",
  "crc32fast",
@@ -5235,7 +5235,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-ml"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "candle-core",
  "candle-nn",
@@ -5257,14 +5257,14 @@ dependencies = [
 
 [[package]]
 name = "photoka-ops"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-doc",
 ]
 
 [[package]]
 name = "photoka-paint"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-geom",
@@ -5275,7 +5275,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-plugins"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-geom",
@@ -5290,7 +5290,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-psd"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "flate2",
  "photoka-psd",
@@ -5301,7 +5301,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-raster"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-geom",
@@ -5311,7 +5311,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-raw"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "flate2",
  "image",
@@ -5326,7 +5326,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-tablet"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "block2 0.6.2",
  "objc2 0.6.4",
@@ -5338,7 +5338,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-testkit"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "memory-stats",
  "photoka-color",
@@ -5349,7 +5349,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-text"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "flate2",
  "parley",
@@ -5363,7 +5363,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-ui-egui"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "base64 0.22.1",
  "craft-ui",
@@ -5404,7 +5404,7 @@ dependencies = [
 
 [[package]]
 name = "photoka-vector"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "photoka-color",
  "photoka-doc",
@@ -8613,7 +8613,7 @@ checksum = "ec7a2a501ed189703dba8b08142f057e887dfc4b2cc4db2d343ac6376ba3e0b9"
 
 [[package]]
 name = "xtask"
-version = "0.8.2"
+version = "1.0.0"
 dependencies = [
  "serde",
  "serde_json",

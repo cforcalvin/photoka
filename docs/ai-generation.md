@@ -1,6 +1,6 @@
 # Offline AI generation
 
-> **Last updated:** 2026-10-13 · **Status:** first version (SD 1.5, inpainting, LoRAs, SD-Turbo/LCM; native and ComfyUI engines)
+> **Last updated:** 2026-10-16 · **Status:** SD 1.5 / Turbo / LoRAs, hardware-ranked Suggested, Remove Object, AI Upscale (ComfyUI)
 
 Photoka can generate and inpaint images on your Mac, offline, in the style of Draw Things: a
 movable frame (512 × 512 by default) sits over any document, you paint a mask inside it for
@@ -11,10 +11,13 @@ Apple silicon only. On an Intel Mac, the Generate panel explains why it's off.
 ## Using it
 
 1. **Window › Model Manager…** (or **Model Manager…** in the Generate tab). Under **Suggested**,
-   pick a model (PerfectDeliberate v5, first on the list, is the suggested default), read and
-   accept its licence, and download it. Under **Import**, add your own `.safetensors` checkpoint,
-   LoRA or VAE (the kind and family are detected from the file). **Installed** lists what's on
-   disk.
+   models are ranked for this Mac (RAM, free disk on the models volume, Apple Silicon). Cards
+   marked **Best for this Mac** fit your hardware; the line under each card explains why. Use
+   **Download starter pack** for the best checkpoint plus missing companions (tokenizer / VAE)
+   that still fit free disk. Read and accept each licence before download (the starter pack
+   lists its members' licences first, then **Accept and download**). Under **Import**, add your own
+   `.safetensors` checkpoint, LoRA or VAE, or a Real-ESRGAN `.pth` as kind `upscale`.
+   **Installed** lists what's on disk.
 2. **Window › Generate** opens the **Generate** tab, next to Layers, Channels and Paths, and
    selects the **Generate Frame** tool. Its settings start at DPM++ 2M Karras, 12 steps,
    guidance 7 and 100% strength.
@@ -27,23 +30,30 @@ Apple silicon only. On an Intel Mac, the Generate panel explains why it's off.
    is kept (enlarge the image or rasterize later). The label above the frame reads
    "512 × 512 from 128 × 128 px". With the checkbox off, drag inside the frame to move it, or
    drag its edges to resize it (sides snap to multiples of 64 px, 64–2048).
-   Switch the tool to **Mask** to paint what should change; **Erase** removes mask. These three
-   buttons and **Clear Mask** also sit just above the frame; **Invert Mask** is on the options
-   bar.
+   Switch the tool to **Mask** to paint what should change; **Erase mask paint** (brush-cleaning
+   icon) removes mask strokes. The **eraser** icon runs **Remove Object** (inpaints the mask to
+   clear the object); the **x** clears the mask. These controls also sit just above the frame;
+   **Invert Mask** is on the options bar.
    The bar above the frame also has the prompt, a strength box (50% to start, so it reworks
    what's there) and a Generate button (or press Return in the prompt). It uses the Generate
    tab's model and other settings, with its own strength.
 4. Type a prompt, choose a model, and press **Generate** (or **Edit › Generate in Frame…**).
+   With no checkpoint installed, **Get a model for this Mac…** opens Model Manager on Suggested.
    - With no mask, the frame is generated from scratch (text to image); with **Strength** below 1,
      the frame's current pixels are the starting point (image to image).
    - With a mask, only the masked area changes (inpainting). Transparent pixels in the frame are
      added to the mask automatically, so dragging the frame past the canvas edge outpaints.
+   - **Edit › Remove Masked Object…** (or the eraser on the frame bar) inpaints the mask at full
+     strength with a cleanup prompt; prefers an installed SD 1.5 inpainting checkpoint.
    - **Strength** works in both cases: 100% replaces the pixels, and lower values keep more of
      the original's shapes and colours (20–40% reworks it lightly). Every step you ask for
      runs, so low strength works with few-step models like SD-Turbo too.
 5. The result is a new layer named after the prompt, at the frame, with a layer mask when you
    inpainted: a pixel layer, or a smart object when it has more pixels than the frame covers
    (not in 32-bit documents). It's one undo step.
+6. **Image › AI Upscale…** (or **Upscale…** in the Generate tab) runs Real-ESRGAN through
+   ComfyUI. Download an upscaler from Suggested (`Real-ESRGAN x2plus` / `x4plus`); start ComfyUI
+   first. Default scale and tile size come from this Mac's RAM (2× / smaller tiles on ≤ 12 GB).
 
 ## Engines
 
@@ -105,9 +115,10 @@ are documented in each command's spec (`photoka-cli commands`).
 
 | Area | Commands |
 |---|---|
-| Models | `ai.catalog.list`, `ai.models.list`, `ai.models.acceptLicense`, `ai.models.download`, `ai.models.import`, `ai.models.delete`, `ai.models.reveal`, `ai.models.setFolder`, `ai.civitai.setKey` |
+| Models | `ai.catalog.list` (hardware ranking, `starterPack`, `fitsRam` / `recommendedForHw`), `ai.models.list`, `ai.models.acceptLicense`, `ai.models.download`, `ai.models.acceptStarterPack` (`{"accept":true}`, then `ai.models.download` each id in `toDownload`), `ai.models.import`, `ai.models.delete`, `ai.models.reveal`, `ai.models.setFolder`, `ai.civitai.setKey` |
 | Frame and mask | `ai.frame.get`, `ai.frame.set`, `ai.frame.reset`, `ai.mask.stroke`, `ai.mask.fill`, `ai.mask.clear`, `ai.mask.invert` |
-| Generation | `ai.generate` (`engine: "native"` or `"comfyui"`) |
+| Generation | `ai.generate` (`engine: "native"` or `"comfyui"`), `ai.removeMasked` |
+| Upscale | `ai.upscale` (`scale` 2\|4, ComfyUI + Real-ESRGAN) |
 | ComfyUI | `ai.comfy.status`, `ai.comfy.install` (`{"accept":true}`), `ai.comfy.uninstall`, `ai.comfy.start`, `ai.comfy.stop` |
 
 Downloads, imports, generation and the ComfyUI install, start and removal run as background
@@ -167,5 +178,5 @@ PHOTOKA_COMFY_DIR=/tmp/comfy PHOTOKA_MODELS_DIR=/path/to/models \
 
 ## Not yet
 
-SDXL and Flux, ControlNet, textual-inversion embeddings in the native engine, upscaling,
-Photoshop's Generative Fill/Expand UI, and ML Select Subject.
+SDXL and Flux, ControlNet, textual-inversion embeddings in the native engine, native (non-ComfyUI)
+Real-ESRGAN, Photoshop's Generative Fill/Expand UI, and ML Select Subject.

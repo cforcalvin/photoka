@@ -16,6 +16,8 @@ use crate::params::{GenerateRequest, Sampler};
 
 /// The node whose output holds the result image.
 pub const OUTPUT_NODE: &str = "22";
+/// Preview node for [`build_upscale`].
+pub const UPSCALE_OUTPUT_NODE: &str = "4";
 /// Pixels `VAEEncodeForInpaint` grows the mask by, for a seamless edge.
 const INPAINT_GROW: u32 = 6;
 
@@ -30,6 +32,18 @@ pub fn sampler_names(sampler: Sampler, family: Family) -> (&'static str, &'stati
         Sampler::Dpmpp2mKarras => ("dpmpp_2m", "karras"),
         Sampler::Lcm => ("lcm", "sgm_uniform"),
     }
+}
+
+/// Real-ESRGAN (or other ComfyUI upscale model) on an uploaded image.
+///
+/// `image` is the name returned by upload; `model` is the file in `upscale_models/`.
+pub fn build_upscale(model: &str, image: &str) -> Value {
+    json!({
+        "1": {"class_type": "LoadImage", "inputs": {"image": image}},
+        "2": {"class_type": "UpscaleModelLoader", "inputs": {"model_name": model}},
+        "3": {"class_type": "ImageUpscaleWithModel", "inputs": {"upscale_model": ["2", 0], "image": ["1", 0]}},
+        "4": {"class_type": "PreviewImage", "inputs": {"images": ["3", 0]}},
+    })
 }
 
 /// The workflow for `req`. `image` is the uploaded frame's name in ComfyUI's input folder, when
@@ -226,5 +240,14 @@ mod tests {
         assert_eq!(sampler_names(Sampler::EulerA, Family::SdTurbo), ("euler_ancestral", "sgm_uniform"));
         assert_eq!(sampler_names(Sampler::EulerA, Family::Sd15), ("euler_ancestral", "normal"));
         assert_eq!(sampler_names(Sampler::Ddim, Family::Sd15), ("ddim", "ddim_uniform"));
+    }
+
+    #[test]
+    fn upscale_workflow_uses_core_nodes() {
+        let w = build_upscale("RealESRGAN_x2plus.pth", "in.png");
+        assert_eq!(w["2"]["class_type"], "UpscaleModelLoader");
+        assert_eq!(w["3"]["class_type"], "ImageUpscaleWithModel");
+        assert_eq!(w["2"]["inputs"]["model_name"], "RealESRGAN_x2plus.pth");
+        assert_eq!(w["1"]["inputs"]["image"], "in.png");
     }
 }

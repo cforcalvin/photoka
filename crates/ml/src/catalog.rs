@@ -18,10 +18,13 @@ pub enum ModelKind {
     Vae,
     Embedding,
     Tokenizer,
+    /// Real-ESRGAN and similar ComfyUI `upscale_models/` weights (often `.pth`).
+    Upscale,
 }
 
 impl ModelKind {
-    pub const ALL: [ModelKind; 5] = [ModelKind::Checkpoint, ModelKind::Lora, ModelKind::Vae, ModelKind::Embedding, ModelKind::Tokenizer];
+    pub const ALL: [ModelKind; 6] =
+        [ModelKind::Checkpoint, ModelKind::Lora, ModelKind::Vae, ModelKind::Embedding, ModelKind::Tokenizer, ModelKind::Upscale];
 
     /// Subfolder of the models directory (ComfyUI's names, plus `tokenizers`).
     pub fn folder(self) -> &'static str {
@@ -31,6 +34,7 @@ impl ModelKind {
             ModelKind::Vae => "vae",
             ModelKind::Embedding => "embeddings",
             ModelKind::Tokenizer => "tokenizers",
+            ModelKind::Upscale => "upscale_models",
         }
     }
 
@@ -41,6 +45,7 @@ impl ModelKind {
             ModelKind::Vae => "vae",
             ModelKind::Embedding => "embedding",
             ModelKind::Tokenizer => "tokenizer",
+            ModelKind::Upscale => "upscale",
         }
     }
 
@@ -59,6 +64,9 @@ pub enum Family {
     Sd15Inpaint,
     #[serde(rename = "sd-turbo")]
     SdTurbo,
+    /// Real-ESRGAN and other dedicated upscalers.
+    #[serde(rename = "upscale")]
+    Upscale,
     /// Support files usable with every family (tokenizer).
     #[serde(rename = "any")]
     Any,
@@ -70,6 +78,7 @@ impl Family {
             Family::Sd15 => "sd15",
             Family::Sd15Inpaint => "sd15-inpaint",
             Family::SdTurbo => "sd-turbo",
+            Family::Upscale => "upscale",
             Family::Any => "any",
         }
     }
@@ -79,6 +88,7 @@ impl Family {
             Family::Sd15 => "SD 1.5",
             Family::Sd15Inpaint => "SD 1.5 Inpainting",
             Family::SdTurbo => "SD-Turbo",
+            Family::Upscale => "Upscale",
             Family::Any => "Any",
         }
     }
@@ -87,6 +97,7 @@ impl Family {
     pub fn compatible_with(self, ckpt: Family) -> bool {
         match self {
             Family::Any => true,
+            Family::Upscale => ckpt == Family::Upscale,
             Family::Sd15 | Family::Sd15Inpaint => matches!(ckpt, Family::Sd15 | Family::Sd15Inpaint),
             Family::SdTurbo => ckpt == Family::SdTurbo,
         }
@@ -193,6 +204,8 @@ impl Catalog {
             }
             let ext_ok = match m.kind {
                 ModelKind::Tokenizer => m.file_name.ends_with(".json"),
+                // ComfyUI upscale weights are typically PyTorch `.pth` (loaded only in ComfyUI).
+                ModelKind::Upscale => m.file_name.ends_with(".pth") || m.file_name.ends_with(".safetensors"),
                 _ => m.file_name.ends_with(".safetensors"),
             };
             if !ext_ok {
@@ -212,6 +225,12 @@ impl Catalog {
             }
             if m.family == Family::Any && m.kind != ModelKind::Tokenizer {
                 return fail("only support files may have family `any`");
+            }
+            if m.kind == ModelKind::Upscale && m.family != Family::Upscale {
+                return fail("upscale models must have family `upscale`");
+            }
+            if m.family == Family::Upscale && m.kind != ModelKind::Upscale {
+                return fail("family `upscale` is only for upscale models");
             }
         }
         Ok(())
@@ -237,10 +256,13 @@ mod tests {
             "pixel-art-lora",
             "lcm-lora-sd15",
             "sd-turbo",
+            "realesrgan-x2plus",
+            "realesrgan-x4plus",
             "clip-tokenizer",
         ] {
             assert!(c.get(id).is_some(), "catalog lacks {id}");
         }
+        assert!(c.get("realesrgan-x2plus").is_some_and(|m| m.kind == ModelKind::Upscale));
         assert!(c.models.iter().any(|m| m.tags.iter().any(|t| t == "pixel-art")));
         assert!(c.models.iter().any(|m| m.tags.iter().any(|t| t == "comic")));
         assert!(c.models.iter().any(|m| m.family == Family::Sd15Inpaint));

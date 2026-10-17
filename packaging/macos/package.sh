@@ -153,6 +153,8 @@ ln -s /Applications "$STAGE/Applications"
 # Finder window layout: background, icon size and positions (packaging/macos/dmg/README.md).
 mkdir -p "$STAGE/.background"
 cp "$HERE/dmg/background.tiff" "$STAGE/.background/background.tiff"
+# Finder needs this folder for the window artwork; hide it so it isn't an icon in the window.
+chflags hidden "$STAGE/.background" "$STAGE/.background/background.tiff"
 cp "$HERE/dmg/dmg-layout.DS_Store" "$STAGE/.DS_Store"
 rm -f "$DMG" "$STAGE_ROOT/raw.dmg"
 # The volume name has no version: .DS_Store finds the background through an alias that includes it.

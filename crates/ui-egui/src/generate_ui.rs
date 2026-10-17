@@ -4,7 +4,7 @@
 //! settings. Every change is an engine `ai.*` command, so agents drive the same thing; the
 //! generation itself is a background job (`ai.generate`) that adds a layer.
 
-use egui::{Color32, Pos2, RichText, Stroke, TextureHandle, vec2};
+use egui::{Color32, CornerRadius, Pos2, RichText, Stroke, TextureHandle, vec2};
 use photoka_doc::DocId;
 use serde::{Deserialize, Serialize};
 use serde_json::{Value, json};
@@ -565,12 +565,12 @@ pub fn pans_view(app: &PhotokaApp) -> bool {
     app.ui.tool == Tool::GenFrame && app.ui.generate.lock_to_view && app.ui.generate.mode == GenMode::Frame && app.session.active().is_some()
 }
 
-/// The Frame, Mask and Erase buttons (the options bar and the bar above the frame).
+/// The Frame, Mask and Erase-mask-paint buttons (the options bar and the bar above the frame).
 fn mode_buttons(ui: &mut egui::Ui, g: &mut GenerateUi, size: f32) {
     for (mode, icon, tip) in [
         (GenMode::Frame, "frame-placeholder", if g.lock_to_view { tl!("Zoom and pan the image under the frame") } else { tl!("Move and resize the frame") }),
         (GenMode::Mask, "brush", tl!("Paint what to regenerate")),
-        (GenMode::Erase, "eraser", tl!("Erase the mask")),
+        (GenMode::Erase, "brush-cleaning", tl!("Erase mask paint")),
     ] {
         if crate::icons::button(ui, icon, size, g.mode == mode, tip).clicked() {
             g.mode = mode;
@@ -674,7 +674,10 @@ pub fn options_bar(app: &mut PhotokaApp, ui: &mut egui::Ui, tool: Tool) -> bool 
     if ui.small_button(tl!("Invert Mask")).clicked() {
         run = Some("ai.mask.invert");
     }
-    if ui.small_button(tl!("Clear Mask")).clicked() {
+    if crate::icons::button(ui, "eraser", 24.0, false, tl!("Remove the masked object")).clicked() {
+        run = Some("ai.removeMasked");
+    }
+    if crate::icons::button(ui, "x", 24.0, false, tl!("Clear Mask")).clicked() {
         run = Some("ai.mask.clear");
     }
     if !g.lock_to_view && ui.small_button(tl!("Reset Frame")).clicked() {
@@ -887,7 +890,7 @@ fn mix_rgb(a: Color32, b: Color32, t: f32) -> Color32 {
 /// just above the frame's top-right corner (kept inside the canvas when the frame's top is off
 /// screen). Generate here uses [`GenerateUi::bar_strength`]; the rest are the panel's settings.
 fn frame_bar(app: &mut PhotokaApp, ctx: &egui::Context, t: &Tokens, canvas: egui::Rect, frame: egui::Rect) {
-    let (mut clear, mut generate) = (false, false);
+    let (mut clear, mut generate, mut remove_obj) = (false, false, false);
     let busy = app.session.ai.generate.busy();
     let pulse = if busy {
         let time = ctx.input(|i| i.time);
@@ -904,20 +907,27 @@ fn frame_bar(app: &mut PhotokaApp, ctx: &egui::Context, t: &Tokens, canvas: egui
     egui::Area::new(egui::Id::new("gen-frame-bar")).order(egui::Order::Foreground).pivot(egui::Align2::RIGHT_BOTTOM).fixed_pos(pos).constrain_to(canvas).show(
         ctx,
         |ui| {
-            egui::Frame::new().fill(fill).stroke(Stroke::new(stroke_w, border)).corner_radius(t.radius_sm).inner_margin(3.0).show(ui, |ui| {
+            // Same height as the strength DragValue (theme interact size).
+            let row_h = ui.spacing().interact_size.y;
+            // Pill ends: radius = half the bar height (inner row + margins).
+            let pill = ((row_h * 0.5) + 3.0).round().clamp(10.0, 24.0) as u8;
+            let cap = pill.saturating_sub(3).max(8);
+            let left_cap = CornerRadius { nw: cap, ne: 0, sw: cap, se: 0 };
+            let right_cap = CornerRadius { nw: 0, ne: cap, sw: 0, se: cap };
+            egui::Frame::new().fill(fill).stroke(Stroke::new(stroke_w, border)).corner_radius(CornerRadius::same(pill)).inner_margin(3.0).show(ui, |ui| {
                 ui.horizontal(|ui| {
                     ui.spacing_mut().item_spacing.x = 2.0;
-                    // Same height as the strength DragValue (theme interact size).
-                    let row_h = ui.spacing().interact_size.y;
                     let g = &mut app.ui.generate;
-                    let prompt = ui.add(
-                        egui::TextEdit::singleline(&mut g.prompt)
-                            .desired_width(220.0)
-                            .min_size(vec2(0.0, row_h))
-                            .margin(egui::Margin::symmetric(6, 2))
-                            .vertical_align(egui::Align::Center)
-                            .hint_text(tl!("Describe the image…")),
-                    );
+                    let prompt = with_corners(ui, left_cap, |ui| {
+                        ui.add(
+                            egui::TextEdit::singleline(&mut g.prompt)
+                                .desired_width(220.0)
+                                .min_size(vec2(0.0, row_h))
+                                .margin(egui::Margin::symmetric(6, 2))
+                                .vertical_align(egui::Align::Center)
+                                .hint_text(tl!("Describe the image…")),
+                        )
+                    });
                     let entered = prompt.lost_focus() && ui.input(|i| i.key_pressed(egui::Key::Enter));
                     let mut strength = g.bar_strength * 100.0;
                     if ui
@@ -932,13 +942,16 @@ fn frame_bar(app: &mut PhotokaApp, ctx: &egui::Context, t: &Tokens, canvas: egui
                     crate::widgets::vline(ui, 18.0);
                     mode_buttons(ui, g, 22.0);
                     crate::widgets::vline(ui, 18.0);
-                    clear = ui.small_button(tl!("Clear Mask")).clicked();
+                    remove_obj = ui.add_enabled_ui(!busy, |ui| crate::icons::button(ui, "eraser", 22.0, false, tl!("Remove the masked object"))).inner.clicked();
+                    clear = with_corners(ui, right_cap, |ui| ui.small_button(tl!("Clear Mask"))).clicked();
                 });
             });
         },
     );
     let r = if clear {
         app.run("ai.mask.clear", json!({})).map(|_| ())
+    } else if remove_obj && !busy {
+        app.run("ai.removeMasked", json!({})).map(|_| ())
     } else if generate && app.ui.generate.model.is_empty() {
         show_tab(app, true).and_then(|()| Err(tl!("Choose a model").to_string()))
     } else if generate {
@@ -950,6 +963,18 @@ fn frame_bar(app: &mut PhotokaApp, ctx: &egui::Context, t: &Tokens, canvas: egui
     if let Err(e) = r {
         crate::notices::error(app, e);
     }
+}
+
+/// Runs `add` with every widget state drawn at corner radius `cr`, leaving sizes untouched.
+fn with_corners<R>(ui: &mut egui::Ui, cr: CornerRadius, add: impl FnOnce(&mut egui::Ui) -> R) -> R {
+    ui.scope(|ui| {
+        let w = &mut ui.visuals_mut().widgets;
+        for v in [&mut w.noninteractive, &mut w.inactive, &mut w.hovered, &mut w.active, &mut w.open] {
+            v.corner_radius = cr;
+        }
+        add(ui)
+    })
+    .inner
 }
 
 fn refresh(app: &mut PhotokaApp, now: f64) {
@@ -964,9 +989,11 @@ fn refresh(app: &mut PhotokaApp, now: f64) {
     g.refreshed_at = Some(now);
 }
 
-/// Installed files of `kind` that the built-in engine can use, with their family.
+/// Installed files of `kind`, with their family, ordered for this Mac (Turbo first when RAM is tight).
 fn installed(g: &GenerateUi, kind: &str) -> Vec<(String, String)> {
-    g.installed
+    let prefer_fast = photoka_ml::system::physical_memory().is_some_and(|b| b <= (12 << 30));
+    let mut list: Vec<(String, String)> = g
+        .installed
         .get("models")
         .and_then(Value::as_array)
         .map(|a| {
@@ -975,7 +1002,32 @@ fn installed(g: &GenerateUi, kind: &str) -> Vec<(String, String)> {
                 .filter_map(|m| Some((m.get("file_name")?.as_str()?.to_string(), m.get("family").and_then(Value::as_str).unwrap_or_default().to_string())))
                 .collect()
         })
-        .unwrap_or_default()
+        .unwrap_or_default();
+    list.sort_by(|a, b| {
+        let rank = |fam: &str, file: &str| -> i32 {
+            if kind == "upscale" {
+                let n = file.to_ascii_lowercase();
+                return if prefer_fast {
+                    if n.contains("x2") { 0 } else if n.contains("x4") { 1 } else { 2 }
+                } else if n.contains("x4") {
+                    0
+                } else if n.contains("x2") {
+                    1
+                } else {
+                    2
+                };
+            }
+            if prefer_fast {
+                if fam.contains("turbo") { 0 } else { 1 }
+            } else if fam == "sd15" || fam == "sd15-inpaint" {
+                0
+            } else {
+                1
+            }
+        };
+        rank(&a.1, &a.0).cmp(&rank(&b.1, &b.0)).then_with(|| a.0.cmp(&b.0))
+    });
+    list
 }
 
 /// What the panel asked for this frame.
@@ -1039,6 +1091,9 @@ pub fn panel(app: &mut PhotokaApp, ui: &mut egui::Ui) {
         ui.horizontal(|ui| {
             if checkpoints.is_empty() {
                 ui.label(RichText::new(tl!("No models installed yet.")).color(t.text_faint).size(11.5));
+                if ui.small_button(tl!("Get a model for this Mac…")).clicked() {
+                    acts.push(Act::ModelManager);
+                }
             } else if loaded.as_deref() == Some(g.model.as_str()) {
                 ui.label(RichText::new(tl!("Loaded and ready")).color(t.text_faint).size(10.5));
             }
@@ -1162,6 +1217,52 @@ pub fn panel(app: &mut PhotokaApp, ui: &mut egui::Ui) {
                     ui.label(RichText::new(format!("{} {}", tl!("Seed"), g.seed)).color(t.text_faint).size(10.5));
                 }
             }
+        }
+        // AI Upscale (ComfyUI + Real-ESRGAN).
+        crate::widgets::hairline(ui);
+        let upscalers = installed(&g, "upscale");
+        let hw = photoka_ml::system::HardwareProfile::probe(std::path::Path::new(
+            g.installed.get("modelsDir").and_then(Value::as_str).unwrap_or(""),
+        ));
+        ui.label(RichText::new(tl!("AI Upscale")).color(t.text_dim).size(11.5));
+        ui.label(
+            RichText::new(format!(
+                "{}: {}× · {} px tiles",
+                tl!("Recommended for this Mac"),
+                hw.default_upscale_scale(),
+                hw.default_upscale_tile()
+            ))
+            .color(t.text_faint)
+            .size(10.5),
+        );
+        if upscalers.is_empty() {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(tl!("No upscale model installed.")).color(t.text_faint).size(11.5));
+                if ui.small_button(tl!("Get a model for this Mac…")).clicked() {
+                    acts.push(Act::ModelManager);
+                }
+            });
+        } else {
+            ui.horizontal(|ui| {
+                let comfy_up = g.comfy.get("running").and_then(Value::as_bool) == Some(true);
+                if ui
+                    .add_enabled(doc.is_some() && comfy_up, egui::Button::new(tl!("Upscale…")))
+                    .on_hover_text(tl!("Image › AI Upscale… — needs ComfyUI running"))
+                    .clicked()
+                {
+                    acts.push(Act::Run(
+                        "ai.upscale",
+                        json!({
+                            "scale": hw.default_upscale_scale(),
+                            "model": upscalers.first().map(|(f, _)| f.clone()),
+                            "tile": hw.default_upscale_tile(),
+                        }),
+                    ));
+                }
+                if !comfy_up {
+                    ui.label(RichText::new(tl!("Start ComfyUI to upscale")).color(t.text_faint).size(10.5));
+                }
+            });
         }
     }
     app.ui.generate = g;

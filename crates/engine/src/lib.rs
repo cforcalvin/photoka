@@ -13,6 +13,7 @@ pub mod adjust_params;
 pub mod ai_cmds;
 pub mod ai_comfy_cmds;
 pub mod ai_gen_cmds;
+pub mod ai_upscale_cmds;
 pub mod align_cmds;
 mod allocation;
 pub mod analysis_cmds;

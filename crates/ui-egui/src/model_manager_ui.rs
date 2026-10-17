@@ -31,6 +31,9 @@ pub struct ModelManagerUi {
     /// The catalog entry whose license is being shown before its download.
     #[serde(default, skip)]
     pub license_prompt: Option<String>,
+    /// The starter pack's licences are being shown before its downloads.
+    #[serde(default, skip)]
+    pub starter_prompt: bool,
     /// The installed file a Delete click is waiting to be confirmed for.
     #[serde(default, skip)]
     pub confirm_delete: Option<String>,
@@ -145,6 +148,8 @@ enum Act {
     Run(&'static str, Value),
     PromptLicense(String),
     CloseLicense,
+    StarterPrompt(bool),
+    AcceptStarter,
     ConfirmDelete(Option<String>),
     Cancel(photoka_engine::jobs::JobId),
     PickFile,
@@ -206,7 +211,7 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
     });
     app.ui.model_manager.key_input = key_input;
     for act in acts {
-        let refresh_after = !matches!(act, Act::Tab(_) | Act::PromptLicense(_) | Act::CloseLicense | Act::ConfirmDelete(_));
+        let refresh_after = !matches!(act, Act::Tab(_) | Act::PromptLicense(_) | Act::CloseLicense | Act::StarterPrompt(_) | Act::ConfirmDelete(_));
         match act {
             Act::Run(id, params) => {
                 let accept_then_download = id == "ai.models.acceptLicense";
@@ -228,6 +233,21 @@ pub fn windows(app: &mut PhotokaApp, ctx: &egui::Context) {
             }
             Act::PromptLicense(id) => app.ui.model_manager.license_prompt = Some(id),
             Act::CloseLicense => app.ui.model_manager.license_prompt = None,
+            Act::StarterPrompt(on) => app.ui.model_manager.starter_prompt = on,
+            Act::AcceptStarter => {
+                app.ui.model_manager.starter_prompt = false;
+                match app.run("ai.models.acceptStarterPack", json!({"accept": true})) {
+                    Ok(r) => {
+                        let ids: Vec<String> = r["toDownload"].as_array().into_iter().flatten().filter_map(Value::as_str).map(str::to_string).collect();
+                        for id in ids {
+                            if let Err(e) = app.run("ai.models.download", json!({"id": id})) {
+                                crate::notices::error(app, e);
+                            }
+                        }
+                    }
+                    Err(e) => crate::notices::error(app, e),
+                }
+            }
             Act::ConfirmDelete(f) => app.ui.model_manager.confirm_delete = f,
             Act::Cancel(job) => crate::jobs_ui::cancel(app, job),
             Act::PickFile => {
@@ -283,6 +303,7 @@ fn kind_label(kind: &str) -> &'static str {
         "vae" => tl!("VAE"),
         "embedding" => tl!("Embedding"),
         "tokenizer" => tl!("Tokenizer"),
+        "upscale" => tl!("Upscale"),
         _ => tl!("Model"),
     }
 }
@@ -292,7 +313,34 @@ fn family_label(family: &str) -> &'static str {
         "sd15" => "SD 1.5",
         "sd15-inpaint" => tl!("SD 1.5 Inpainting"),
         "sd-turbo" => "SD-Turbo",
+        "upscale" => tl!("Upscale"),
         _ => "",
+    }
+}
+
+fn hardware_summary(catalog: &Value) -> String {
+    let hw = catalog.get("hardware");
+    let ram = hw.and_then(|h| h.get("ramGb")).and_then(Value::as_u64);
+    let disk = hw.and_then(|h| h.get("diskFreeGb")).and_then(Value::as_u64);
+    let silicon = hw.and_then(|h| h.get("appleSilicon")).and_then(Value::as_bool).unwrap_or(false);
+    let chip = hw.and_then(|h| h.get("chip")).and_then(Value::as_str).unwrap_or("");
+    let mut parts = Vec::new();
+    if let Some(g) = ram {
+        parts.push(format!("{g} GB"));
+    }
+    if let Some(g) = disk {
+        parts.push(format!("{g} GB free"));
+    }
+    if silicon {
+        parts.push("Apple Silicon".into());
+    }
+    if !chip.is_empty() && parts.len() < 3 {
+        parts.push(chip.into());
+    }
+    if parts.is_empty() {
+        tl!("Models that fit this Mac are listed first.").to_string()
+    } else {
+        format!("{} — {}", parts.join(" · "), tl!("models that fit are listed first"))
     }
 }
 
@@ -312,6 +360,51 @@ fn suggested(ui: &mut egui::Ui, t: &Tokens, m: &ModelManagerUi, jobs: &[photoka_
             }
         }
     });
+    ui.add_space(2.0);
+    ui.label(RichText::new(format!("{}: {}", tl!("This Mac"), hardware_summary(&m.catalog))).color(t.text_faint).size(11.5));
+    if let Some(pack) = m.catalog.get("starterPack") {
+        let ids = pack.get("ids").and_then(Value::as_array).cloned().unwrap_or_default();
+        let need = ids.iter().filter_map(|id| id.as_str()).any(|id| {
+            m.catalog
+                .get("models")
+                .and_then(Value::as_array)
+                .into_iter()
+                .flatten()
+                .any(|e| e.get("id").and_then(Value::as_str) == Some(id) && e["installed"] != json!(true))
+        });
+        if need && !ids.is_empty() {
+            ui.horizontal(|ui| {
+                ui.label(RichText::new(tl!("Starter pack for this Mac")).color(t.text_dim).size(11.5));
+                if crate::widgets::primary_button(ui, tl!("Download starter pack"), 150.0).clicked() {
+                    acts.push(Act::StarterPrompt(true));
+                }
+                let total = pack.get("totalBytes").and_then(Value::as_u64).unwrap_or(0);
+                if total > 0 {
+                    ui.label(RichText::new(human(total)).color(t.text_faint).size(11.5));
+                }
+            });
+            if m.starter_prompt {
+                let models = m.catalog.get("models").and_then(Value::as_array);
+                ui.label(RichText::new(tl!("Read each licence before you download the starter pack:")).color(t.text_dim).size(11.5));
+                for id in ids.iter().filter_map(Value::as_str) {
+                    let Some(e) = models.into_iter().flatten().find(|e| e.get("id").and_then(Value::as_str) == Some(id)) else { continue };
+                    let s = |k: &str| e.get(k).and_then(Value::as_str).unwrap_or_default().to_string();
+                    ui.horizontal(|ui| {
+                        ui.label(RichText::new(s("name")).color(t.text).size(11.5));
+                        ui.hyperlink_to(RichText::new(s("license")).size(11.5), s("license_url"));
+                    });
+                }
+                ui.horizontal(|ui| {
+                    if crate::widgets::primary_button(ui, tl!("Accept and download"), 150.0).clicked() {
+                        acts.push(Act::AcceptStarter);
+                    }
+                    if ui.button(tl!("Cancel")).clicked() {
+                        acts.push(Act::StarterPrompt(false));
+                    }
+                });
+            }
+        }
+    }
     ui.add_space(4.0);
     let empty = Vec::new();
     let models = m.catalog.get("models").and_then(Value::as_array).unwrap_or(&empty);
@@ -332,6 +425,10 @@ fn card(ui: &mut egui::Ui, t: &Tokens, m: &ModelManagerUi, e: &Value, jobs: &[ph
     let (id, name) = (s("id"), s("name"));
     let installed = e["installed"] == json!(true);
     let needs_key = e["requires_key"] == json!(true) && !has_key;
+    let fits_disk = e.get("fitsDisk").and_then(Value::as_bool).unwrap_or(true);
+    let fits_ram = e.get("fitsRam").and_then(Value::as_bool).unwrap_or(true);
+    let best = e.get("recommendedForHw").and_then(Value::as_bool).unwrap_or(false);
+    let reason = s("recommendReason");
     let job = jobs.iter().find(|j| j.command == "ai.models.download" && j.label.ends_with(&name));
     egui::Frame::NONE.fill(t.field).stroke(Stroke::new(1.0, t.field_border)).corner_radius(t.radius_sm).inner_margin(8.0).show(ui, |ui| {
         ui.set_width(ui.available_width());
@@ -341,6 +438,9 @@ fn card(ui: &mut egui::Ui, t: &Tokens, m: &ModelManagerUi, e: &Value, jobs: &[ph
             let fam = family_label(&s("family"));
             if !fam.is_empty() {
                 badge(ui, t, fam);
+            }
+            if best {
+                badge(ui, t, tl!("Best for this Mac"));
             }
             ui.with_layout(egui::Layout::right_to_left(egui::Align::Center), |ui| {
                 if installed {
@@ -355,6 +455,8 @@ fn card(ui: &mut egui::Ui, t: &Tokens, m: &ModelManagerUi, e: &Value, jobs: &[ph
                     crate::jobs_ui::bar(ui, r, (j.progress > 0.0).then_some(j.progress), t);
                 } else if needs_key {
                     ui.add_enabled(false, egui::Button::new(tl!("Needs a Civitai key")));
+                } else if !fits_disk {
+                    ui.add_enabled(false, egui::Button::new(tl!("Not enough free space")));
                 } else {
                     let label = if e["partialBytes"].is_u64() { tl!("Resume") } else { tl!("Download") };
                     if crate::widgets::primary_button(ui, label, 90.0).clicked() {
@@ -369,6 +471,11 @@ fn card(ui: &mut egui::Ui, t: &Tokens, m: &ModelManagerUi, e: &Value, jobs: &[ph
             });
         });
         ui.label(RichText::new(s("description")).color(t.text_dim).size(12.0));
+        if !reason.is_empty() {
+            ui.label(RichText::new(&reason).color(if fits_ram { t.text_faint } else { t.danger }).size(11.0));
+        } else if fits_disk && !fits_ram {
+            ui.label(RichText::new(tl!("May be too large for this Mac’s memory")).color(t.danger).size(11.0));
+        }
         ui.horizontal_wrapped(|ui| {
             if let Some(tags) = e["tags"].as_array() {
                 for tag in tags.iter().filter_map(Value::as_str) {

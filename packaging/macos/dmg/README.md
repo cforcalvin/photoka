@@ -8,7 +8,7 @@ Finder scripting on CI, nothing extra installed in the signing job).
 | File | What |
 |---|---|
 | `background.svg` | Source of the background: the app icon (`assets/app-icon/photoka.svg`, linked, not copied) cropped as a cover on its grey field (`#919191`), Ink and Paper. Its text (Inter, JetBrains Mono) is outlined, so rendering it needs no fonts. |
-| `background.tiff` | The background at 1x (660 × 400 px, 72 dpi) and 2x (1320 × 800 px, 144 dpi) in one HiDPI TIFF (256-colour median-cut palette, Deflate, sRGB; about 90 KB). Goes to `.background/background.tiff`. |
+| `background.tiff` | The background at 1x (660 × 400 px, 72 dpi) and 2x (1320 × 800 px, 144 dpi) in one HiDPI TIFF (256-colour median-cut palette, Deflate, sRGB; about 90 KB). Goes to `.background/background.tiff` (the folder is required by Finder for a picture background; `package.sh` marks it hidden so it isn't an icon in the window). |
 | `dmg-layout.DS_Store` | Finder's view settings for the volume: window size, icon size 128, Photoka.app at (326, 205), `Applications` at (574, 205), and the background. Goes to `.DS_Store` in the image; named so it isn't mistaken for (or ignored like) a Finder-generated `.DS_Store`. |
 | `generate.py` | Writes `background.tiff` and `dmg-layout.DS_Store` from the SVG and the layout above. |
 

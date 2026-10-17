@@ -673,6 +673,60 @@ fn layer_name(prompt: &str) -> String {
     }
 }
 
+/// Prefer an installed SD 1.5 inpainting checkpoint, else any SD 1.5 checkpoint.
+fn pick_remove_checkpoint(store: &photoka_ml::store::ModelStore) -> Result<String> {
+    let models = store.scan(None);
+    let ok = |m: &&photoka_ml::store::InstalledModel| m.kind == photoka_ml::catalog::ModelKind::Checkpoint && m.problem.is_none();
+    let inpaint = models.iter().find(|m| ok(m) && m.family == Some(photoka_ml::catalog::Family::Sd15Inpaint));
+    let sd15 = models.iter().find(|m| ok(m) && matches!(m.family, Some(photoka_ml::catalog::Family::Sd15 | photoka_ml::catalog::Family::Sd15Inpaint)));
+    inpaint.or(sd15).map(|m| m.file_name.clone()).ok_or_else(|| {
+        EngineError::Other(
+            "no SD 1.5 checkpoint is installed; download one from Model Manager (an inpainting model works best for Remove Object)".into(),
+        )
+    })
+}
+
+/// Inpaint the current mask to remove the object (empty / cleanup prompt, full strength).
+fn remove_masked(s: &mut Session, p: &Value) -> Result<Value> {
+    const CMD: &str = "ai.removeMasked";
+    let doc = active_doc(s)?;
+    let frame = s.ai.generate.frame_for(&doc);
+    let Some(mask) = s.ai.generate.mask_for(doc.id).and_then(|m| m.crop(frame)) else {
+        return Err(bad(CMD, "paint a mask over what to remove first"));
+    };
+    if !mask.data.iter().any(|&v| v >= 128) {
+        return Err(bad(CMD, "paint a mask over what to remove first"));
+    }
+    let store = s.ai.store();
+    let model = match p.get("model").and_then(Value::as_str).map(str::trim).filter(|m| !m.is_empty()) {
+        Some(m) => m.to_string(),
+        None => pick_remove_checkpoint(&store)?,
+    };
+    let hw = photoka_ml::system::HardwareProfile::probe(&s.ai.models_dir);
+    let steps = if hw.prefer_fast_generate() { 12u64 } else { 20u64 };
+    let engine = p.get("engine").cloned().unwrap_or_else(|| json!("native"));
+    let mut params = json!({
+        "model": model,
+        "prompt": "empty background, seamless surroundings, clean",
+        "negative": "blurry, low quality, watermark, text, object, person",
+        "steps": steps,
+        "cfg": 7.0,
+        "sampler": "dpmpp_2m_karras",
+        "strength": 1.0,
+        "engine": engine,
+    });
+    if let Some(o) = params.as_object_mut() {
+        if let Some(v) = p.get("vae") {
+            o.insert("vae".into(), v.clone());
+        }
+        if let Some(v) = p.get("seed") {
+            o.insert("seed".into(), v.clone());
+        }
+    }
+    let _ = mask; // validated above; generate reads the session mask
+    generate(s, &params)
+}
+
 fn generate(s: &mut Session, p: &Value) -> Result<Value> {
     const CMD: &str = "ai.generate";
     let engine = match p.get("engine").and_then(Value::as_str) {
@@ -835,6 +889,16 @@ pub fn specs() -> Vec<CommandSpec> {
             run: generate,
             journal: true,
         },
+        CommandSpec {
+            id: "ai.removeMasked",
+            label: "Remove Masked Object",
+            menu: &["Edit"],
+            shortcut: None,
+            params: r#"{"model":checkpoint?,"engine":"native|comfyui"="native","vae"?,"seed"?} → inpaints the current mask at full strength to remove the object (picks an installed SD 1.5 / inpaint checkpoint when model is omitted)"#,
+            enabled: has_doc,
+            run: remove_masked,
+            journal: true,
+        },
     ]
 }
 
@@ -937,6 +1001,22 @@ mod tests {
         }
         // A mask that doesn't match the result is an error, not a panic.
         assert!(result_layer(&doc, "g".into(), frame, &img, Some(&Mask::new(8, 8).unwrap()), false).is_err());
+    }
+
+    #[test]
+    fn remove_masked_needs_a_mask() {
+        let mut s = session();
+        // Isolate from the developer's real models folder so we never start a real job here.
+        let dir = std::env::temp_dir().join(format!("photoka-remove-masked-{}", std::process::id()));
+        let _ = std::fs::remove_dir_all(&dir);
+        s.ai.models_dir = dir.join("models");
+        let e = s.execute("ai.removeMasked", json!({})).unwrap_err().to_string();
+        assert!(e.contains("paint a mask"), "{e}");
+        s.execute("ai.mask.fill", json!({})).unwrap();
+        // No checkpoint installed → clear error, not a panic.
+        let e = s.execute("ai.removeMasked", json!({})).unwrap_err().to_string();
+        assert!(e.contains("checkpoint") || e.contains("model") || e.contains("install"), "{e}");
+        let _ = std::fs::remove_dir_all(dir);
     }
 
     #[test]

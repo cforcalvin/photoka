@@ -701,6 +701,7 @@ fn check_memory(family: Family) -> Result<()> {
     // UNet and VAE in f16, text encoder in f32, plus working memory for a 512×512 frame.
     let need: u64 = match family {
         Family::SdTurbo => 6 << 30,
+        Family::Upscale => 2 << 30,
         _ => 4 << 30,
     };
     if total < need + (2 << 30) {

@@ -1,6 +1,6 @@
 # Where Photoka falls short of Photoshop
 
-> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-13 · **Change:** minor (G15: offline AI generation landed: frame, inpainting, SD 1.5/Turbo/LCM, LoRAs, native and ComfyUI engines, Model Manager) · **Target:** Adobe Photoshop 2026
+> **Last reviewed:** 2026-10-10 · **Last updated:** 2026-10-16 · **Change:** minor (G15: hardware-ranked Suggested, Remove Object, AI Upscale via ComfyUI/Real-ESRGAN) · **Target:** Adobe Photoshop 2026
 
 Every known shortfall against Photoshop 2026 (27.11.0), one entry each, ranked by user impact
 on the way to beta. This is the work list agents pick from: take the highest-ranked entry that
@@ -112,8 +112,11 @@ what an agent can't finish alone.
   and an optional Photoka-managed ComfyUI, and a Model Manager with a bundled click-to-download
   catalog. This is the local ML runtime the owner decision (#41) asked for: openly licensed
   models, local only, nothing downloaded by default.
+- **Done (2026-10-16):** Model Manager Suggested ranked for this Mac (RAM / free disk / Apple
+  Silicon) with starter pack; **Remove Masked Object** (`ai.removeMasked`); **AI Upscale**
+  (`ai.upscale`, Real-ESRGAN via ComfyUI, hardware-tuned scale/tile defaults).
 - **Missing:** Photoshop's Generative Fill and Expand UI over a selection (the frame engine can
-  back it), Generative Upscale, Neural Filters, Sky Replacement, Super Zoom, ML Select
+  back it), native (non-ComfyUI) upscale, Neural Filters, Sky Replacement, Super Zoom, ML Select
   Subject/Sky, SDXL/Flux, ControlNet. Classical substitutes exist (GrabCut/max-flow selection,
   Remove tool by non-local patch completion).
 - **Evidence:** Photoshop's `Required/UXP` ships the Neural Filters gallery and its `.kys` has
@@ -235,6 +238,7 @@ what an agent can't finish alone.
 | Date | Change | Summary |
 |---|---|---|
 | 2026-10-13 | minor | G15: offline AI generation (Generate Frame, inpainting, LoRAs, native and ComfyUI engines, Model Manager); estimate 300–600 → 220–500 h |
+| 2026-10-16 | minor | G15: hardware-ranked Suggested + starter pack; Remove Masked Object; AI Upscale (ComfyUI Real-ESRGAN) |
 | 2026-10-11 | minor | D5100 image area and Camera Raw tuning validation; G14 remains open |
 | 2026-10-11 | minor | G13: Czech dynamic UI text localized; engine messages and native review remain open |
 | 2026-10-11 | minor | G8: triple/quadruple/five-click type selection done (TYPE-218-8, #3493); Type evidence recounted |

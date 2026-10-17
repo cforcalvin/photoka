@@ -131,9 +131,11 @@ impl ModelStore {
     pub fn import(&self, src: &Path, kind: Option<ModelKind>) -> Result<InstalledModel> {
         let name = src.file_name().and_then(|n| n.to_str()).ok_or_else(|| MlError::BadParams(format!("{}: not a file name", src.display())))?;
         let lower = name.to_ascii_lowercase();
-        if [".ckpt", ".pt", ".pth", ".bin", ".pkl"].iter().any(|e| lower.ends_with(e)) {
+        // Upscale weights for ComfyUI are typically `.pth`; everything else must be safetensors.
+        let upscale_pth = kind == Some(ModelKind::Upscale) && lower.ends_with(".pth");
+        if !upscale_pth && [".ckpt", ".pt", ".pth", ".bin", ".pkl"].iter().any(|e| lower.ends_with(e)) {
             return Err(MlError::Unsupported(format!(
-                "{name}: pickle model files can run code when loaded, so Photoka only imports .safetensors; download the .safetensors version of this model"
+                "{name}: pickle model files can run code when loaded, so Photoka only imports .safetensors (or Real-ESRGAN .pth via Model Manager); download the .safetensors version of this model"
             )));
         }
         if !src.is_file() {
@@ -204,6 +206,7 @@ impl ModelStore {
 fn has_model_extension(kind: ModelKind, name: &str) -> bool {
     match kind {
         ModelKind::Tokenizer => name.ends_with(".json"),
+        ModelKind::Upscale => name.ends_with(".pth") || name.ends_with(".safetensors"),
         _ => name.ends_with(".safetensors"),
     }
 }
@@ -214,8 +217,18 @@ pub fn detect(path: &Path, expected: Option<ModelKind>) -> Result<Detected> {
     if expected == Some(ModelKind::Tokenizer) || (expected.is_none() && name.ends_with(".json")) {
         return detect_tokenizer(path, &name);
     }
+    if (expected == Some(ModelKind::Upscale)
+        || (expected.is_none() && (name.ends_with(".pth") || name.to_ascii_lowercase().contains("realesrgan"))))
+        && (name.ends_with(".pth") || name.ends_with(".safetensors"))
+    {
+        let len = std::fs::metadata(path).map_err(|e| MlError::io(path.display(), e))?.len();
+        if len < 1_000_000 {
+            return Err(MlError::BadModel(format!("{name}: too small for an upscale model")));
+        }
+        return Ok(Detected { kind: ModelKind::Upscale, family: Family::Upscale });
+    }
     if !name.ends_with(".safetensors") {
-        return Err(MlError::Unsupported(format!("{name}: only .safetensors model files are supported")));
+        return Err(MlError::Unsupported(format!("{name}: only .safetensors model files are supported (upscale models may be .pth)")));
     }
     let h = Header::read(path)?;
     let found = detect_header(&h).map_err(|msg| MlError::Unsupported(format!("{name}: {msg}")))?;
